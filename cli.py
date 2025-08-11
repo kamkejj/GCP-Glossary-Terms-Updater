@@ -38,7 +38,7 @@ def main():
     # Download command
     download_parser = subparsers.add_parser('download', help='Download a CSV glossary from Cloud Storage')
     download_parser.add_argument('language_pair', help='Language pair (e.g., en-es, fr-de)')
-    download_parser.add_argument('output', help='Output filename (will be saved to glossaries/ folder)')
+    download_parser.add_argument('--output', help='Output filename (optional, will auto-generate based on language pair)')
     
     # List command
     list_parser = subparsers.add_parser('list', help='List available glossaries')
@@ -100,17 +100,25 @@ def main():
                 sys.exit(1)
         
         elif args.command == 'download':
-            # Ensure glossaries folder exists
-            glossaries_path = Path('glossaries')
-            glossaries_path.mkdir(exist_ok=True)
-            output_path = glossaries_path / args.output
+            # Use provided output path or let the manager auto-generate
+            output_path = args.output
+            if output_path:
+                # Ensure glossaries folder exists
+                glossaries_path = Path('glossaries')
+                glossaries_path.mkdir(exist_ok=True)
+                output_path = str(glossaries_path / output_path)
             
             success = manager.download_glossary_csv(
                 language_pair=args.language_pair,
-                local_file_path=str(output_path)
+                local_file_path=output_path
             )
             if success:
-                print(f"✅ Successfully downloaded {args.language_pair} to {output_path}")
+                if output_path:
+                    print(f"✅ Successfully downloaded {args.language_pair} to {output_path}")
+                else:
+                    # Get the auto-generated path for display
+                    auto_path = manager._generate_glossary_filename(args.language_pair)
+                    print(f"✅ Successfully downloaded {args.language_pair} to {auto_path}")
             else:
                 print(f"❌ Failed to download {args.language_pair}")
                 sys.exit(1)

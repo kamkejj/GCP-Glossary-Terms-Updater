@@ -66,16 +66,28 @@ def main():
     else:
         print("No glossaries found in Cloud Storage")
     
-    # Example 4: Download a glossary from Cloud Storage
-    print("\n📥 Example 4: Downloading glossary from Cloud Storage")
-    download_path = "glossaries/en-es_downloaded.csv"
+    # Example 4: Download a glossary from Cloud Storage (with auto-generated filename)
+    print("\n📥 Example 4: Downloading glossary from Cloud Storage (auto-generated filename)")
     success = manager.download_glossary_csv(
-        language_pair='en-es',
-        local_file_path=download_path
+        language_pair='en-es'
+        # local_file_path is not provided, so it will auto-generate the filename
     )
     
     if success:
-        print(f"✅ Successfully downloaded glossary to {download_path}")
+        print("✅ Successfully downloaded glossary with auto-generated filename")
+    else:
+        print("❌ Failed to download glossary")
+    
+    # Example 4b: Download a glossary with custom filename
+    print("\n📥 Example 4b: Downloading glossary with custom filename")
+    custom_download_path = "glossaries/en-es_custom.csv"
+    success = manager.download_glossary_csv(
+        language_pair='en-es',
+        local_file_path=custom_download_path
+    )
+    
+    if success:
+        print(f"✅ Successfully downloaded glossary to {custom_download_path}")
     else:
         print("❌ Failed to download glossary")
     

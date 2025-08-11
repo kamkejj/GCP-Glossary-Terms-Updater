@@ -98,7 +98,7 @@ If you prefer to edit `config.py` directly, you can still do so. The environment
 
 The project includes a comprehensive CLI for easy operations:
 
-**Note:** All glossary files are automatically managed in the `glossaries/` folder. When uploading, specify only the filename (e.g., `glossary.csv`) and it will be looked for in the `glossaries/` folder. When downloading, specify only the filename and it will be saved to the `glossaries/` folder.
+**Note:** All glossary files are automatically managed in the `glossaries/` folder. When uploading, specify only the filename (e.g., `glossary.csv`) and it will be looked for in the `glossaries/` folder. When downloading, the filename is automatically generated based on the language pair (e.g., `en-es` becomes `en_es_glossary.csv`), but you can also specify a custom filename.
 
 #### Validate Environment
 
@@ -115,7 +115,11 @@ python cli.py --env dev upload glossary.csv en-es --overwrite
 #### Download a Glossary
 
 ```bash
-python cli.py --env dev download en-es downloaded_glossary.csv
+# Download with auto-generated filename (recommended)
+python cli.py --env dev download en-es
+
+# Download with custom filename
+python cli.py --env dev download en-es --output custom_glossary.csv
 ```
 
 #### List Available Glossaries
@@ -163,16 +167,31 @@ success = manager.upload_glossary_csv(
     overwrite=True
 )
 
-# Download a glossary
+# Download a glossary (with auto-generated filename)
+success = manager.download_glossary_csv(
+    language_pair='en-es'
+    # local_file_path is optional - will auto-generate filename
+)
+
+# Download a glossary with custom filename
 success = manager.download_glossary_csv(
     language_pair='en-es',
-    local_file_path='glossaries/downloaded_glossary.csv'
+    local_file_path='glossaries/custom_glossary.csv'
 )
 
 # List available glossaries
 glossaries = manager.list_available_glossaries()
 print(f"Available glossaries: {glossaries}")
 ```
+
+## Auto-Generated Filenames
+
+When downloading glossaries, the system automatically generates filenames based on the language pair:
+
+- **Regular glossaries**: `en-es` → `glossaries/en_es_glossary.csv`
+- **IWD glossaries**: `iwd-en-es` → `glossaries/iwd_en_es_glossary.csv`
+
+This ensures consistent naming conventions and eliminates the need to remember specific filenames. You can still specify a custom filename if needed.
 
 ## CSV Format
 
