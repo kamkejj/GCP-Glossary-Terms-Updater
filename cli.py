@@ -1,189 +1,307 @@
 """
-Command-line interface for the Glossary Transfer project.
-Provides easy access to glossary management operations.
+Interactive command-line interface for the Glossary Transfer project.
+Provides easy access to glossary management operations with user-friendly prompts.
 """
 
-import argparse
 import sys
 import os
 from pathlib import Path
+from typing import Optional
 
 from glossary_manager import GlossaryManager
 from config import Config
 
 
+def get_user_choice(options: list, prompt: str, allow_cancel: bool = True) -> Optional[str]:
+    """
+    Get user choice from a list of options.
+
+    Args:
+        options: List of options to choose from
+        prompt: Prompt message to display
+        allow_cancel: Whether to allow canceling the operation
+
+    Returns:
+        Selected option or None if canceled
+    """
+    while True:
+        print(f"\n{prompt}")
+        for i, option in enumerate(options, 1):
+            print(f"  {i}. {option}")
+
+        if allow_cancel:
+            print(f"  {len(options) + 1}. Cancel")
+
+        try:
+            choice = input(f"\nEnter your choice (1-{len(options) + (1 if allow_cancel else 0)}): ").strip()
+            choice_num = int(choice)
+
+            if allow_cancel and choice_num == len(options) + 1:
+                return None
+
+            if 1 <= choice_num <= len(options):
+                return options[choice_num - 1]
+            else:
+                print("❌ Invalid choice. Please try again.")
+        except ValueError:
+            print("❌ Please enter a valid number.")
+        except (KeyboardInterrupt, EOFError):
+            print("\n\n👋 Goodbye!")
+            sys.exit(0)
+
+
+def get_file_input(prompt: str, folder: str = "glossaries") -> Optional[str]:
+    """
+    Get file input from user with validation.
+
+    Args:
+        prompt: Prompt message to display
+        folder: Folder to look for files in
+
+    Returns:
+        Selected filename or None if canceled
+    """
+    folder_path = Path(folder)
+    if not folder_path.exists():
+        print(f"❌ Folder '{folder}' does not exist.")
+        return None
+
+    files = [f.name for f in folder_path.iterdir() if f.is_file() and f.suffix.lower() == '.csv']
+
+    if not files:
+        print(f"❌ No CSV files found in '{folder}' folder.")
+        return None
+
+    print(f"\n{prompt}")
+    print("Available CSV files:")
+    for i, file in enumerate(files, 1):
+        print(f"  {i}. {file}")
+    print(f"  {len(files) + 1}. Cancel")
+
+    try:
+        choice = input(f"\nEnter your choice (1-{len(files) + 1}): ").strip()
+        choice_num = int(choice)
+
+        if choice_num == len(files) + 1:
+            return None
+
+        if 1 <= choice_num <= len(files):
+            return files[choice_num - 1]
+        else:
+            print("❌ Invalid choice.")
+            return None
+    except ValueError:
+        print("❌ Please enter a valid number.")
+        return None
+    except (KeyboardInterrupt, EOFError):
+        print("\n\n👋 Goodbye!")
+        sys.exit(0)
+
+
+def get_text_input(prompt: str, allow_empty: bool = False) -> Optional[str]:
+    """
+    Get text input from user.
+
+    Args:
+        prompt: Prompt message to display
+        allow_empty: Whether to allow empty input
+
+    Returns:
+        User input or None if canceled
+    """
+    try:
+        while True:
+            user_input = input(f"\n{prompt}: ").strip()
+            if allow_empty or user_input:
+                return user_input
+            print("❌ Input cannot be empty. Please try again.")
+    except (KeyboardInterrupt, EOFError):
+        print("\n\n👋 Goodbye!")
+        sys.exit(0)
+
+
 def main():
-    """Main CLI function."""
-    parser = argparse.ArgumentParser(
-        description="Glossary Transfer CLI - Manage CSV glossaries for Google Translation V3 API"
-    )
-    
-    # Global arguments
-    parser.add_argument(
-        '--env', 
-        choices=['dev', 'prod'], 
-        default='dev',
-        help='Environment to use (default: dev)'
-    )
-    
-    # Subcommands
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
-    # Upload command
-    upload_parser = subparsers.add_parser('upload', help='Upload a CSV glossary to Cloud Storage')
-    upload_parser.add_argument('file', help='Filename in glossaries/ folder to upload')
-    upload_parser.add_argument('language_pair', help='Language pair (e.g., en-es, fr-de)')
-    upload_parser.add_argument('--overwrite', action='store_true', help='Overwrite existing file')
-    
-    # Download command
-    download_parser = subparsers.add_parser('download', help='Download a CSV glossary from Cloud Storage')
-    download_parser.add_argument('language_pair', help='Language pair (e.g., en-es, fr-de)')
-    download_parser.add_argument('--output', help='Output filename (optional, will auto-generate based on language pair)')
-    
-    # List command
-    list_parser = subparsers.add_parser('list', help='List available glossaries')
-    list_parser.add_argument('--type', choices=['storage', 'api'], default='storage',
-                           help='Type of glossaries to list (default: storage)')
-    
-    # Create sample command
-    sample_parser = subparsers.add_parser('sample', help='Create a sample CSV glossary')
-    sample_parser.add_argument('language_pair', help='Language pair (e.g., en-es, fr-de)')
-    sample_parser.add_argument('output', help='Output filename (will be saved to glossaries/ folder)')
-    
-    # Create API glossary command
-    api_parser = subparsers.add_parser('create-api', help='Create glossary in Translation API')
-    api_parser.add_argument('language_pair', help='Language pair (e.g., en-es, fr-de)')
-    api_parser.add_argument('name', help='Name for the glossary in the Translation API')
-    
-    # Validate command
-    validate_parser = subparsers.add_parser('validate', help='Validate environment configuration')
-    
-    args = parser.parse_args()
-    
-    if not args.command:
-        parser.print_help()
+    """Main interactive CLI function."""
+    print("🌍 Glossary Transfer CLI")
+    print("=" * 50)
+
+    # Step 1: Select environment
+    environments = Config.list_environments()
+    environment = get_user_choice(environments, "Select environment:")
+    if not environment:
+        print("👋 Operation canceled.")
         return
-    
+
     # Validate environment
-    if not Config.validate_environment(args.env):
-        print(f"❌ Invalid environment: {args.env}")
-        print(f"Available environments: {', '.join(Config.list_environments())}")
+    if not Config.validate_environment(environment):
+        print(f"❌ Invalid environment: {environment}")
+        print(f"Available environments: {', '.join(environments)}")
         sys.exit(1)
-    
+
+    # Step 2: Select operation
+    operations = [
+        "Upload CSV glossary to Cloud Storage",
+        "Download CSV glossary from Cloud Storage",
+        "List available glossaries",
+        "Validate environment configuration"
+    ]
+
+    operation = get_user_choice(operations, "Select operation:")
+    if not operation:
+        print("👋 Operation canceled.")
+        return
+
     try:
         # Get configuration
-        config = Config.get_environment_config(args.env)
-        
+        config = Config.get_environment_config(environment)
+
         # Initialize glossary manager
         manager = GlossaryManager(
             credentials_path=config['credentials_path'],
             project_id=config['project_id'],
             bucket_name=config['bucket_name']
         )
-        
-        # Execute command
-        if args.command == 'upload':
-            # Ensure file is in glossaries folder
-            glossaries_path = Path('glossaries')
-            glossaries_path.mkdir(exist_ok=True)
-            file_path = glossaries_path / args.file
-            
-            success = manager.upload_glossary_csv(
-                local_file_path=str(file_path),
-                language_pair=args.language_pair,
-                overwrite=args.overwrite
-            )
-            if success:
-                print(f"✅ Successfully uploaded {file_path} for {args.language_pair}")
-            else:
-                print(f"❌ Failed to upload {file_path}")
-                sys.exit(1)
-        
-        elif args.command == 'download':
-            # Use provided output path or let the manager auto-generate
-            output_path = args.output
-            if output_path:
-                # Ensure glossaries folder exists
-                glossaries_path = Path('glossaries')
-                glossaries_path.mkdir(exist_ok=True)
-                output_path = str(glossaries_path / output_path)
-            
-            success = manager.download_glossary_csv(
-                language_pair=args.language_pair,
-                local_file_path=output_path
-            )
-            if success:
-                if output_path:
-                    print(f"✅ Successfully downloaded {args.language_pair} to {output_path}")
-                else:
-                    # Get the auto-generated path for display
-                    auto_path = manager._generate_glossary_filename(args.language_pair)
-                    print(f"✅ Successfully downloaded {args.language_pair} to {auto_path}")
-            else:
-                print(f"❌ Failed to download {args.language_pair}")
-                sys.exit(1)
-        
-        elif args.command == 'list':
-            if args.type == 'storage':
-                glossaries = manager.list_available_glossaries()
-                if glossaries:
-                    print("📋 Available glossaries in Cloud Storage:")
-                    for lang_pair in glossaries:
-                        print(f"  • {lang_pair}")
-                else:
-                    print("📋 No glossaries found in Cloud Storage")
-            else:  # api
-                glossaries = manager.list_translation_glossaries()
-                if glossaries:
-                    print("📋 Available glossaries in Translation API:")
-                    for glossary in glossaries:
-                        print(f"  • {glossary['name']} ({glossary['language_pair']}) - {glossary['state']}")
-                else:
-                    print("📋 No glossaries found in Translation API")
-        
-        elif args.command == 'sample':
-            # Ensure glossaries folder exists
-            glossaries_path = Path('glossaries')
-            glossaries_path.mkdir(exist_ok=True)
-            output_path = glossaries_path / args.output
-            
-            success = manager.create_sample_glossary_csv(
-                language_pair=args.language_pair,
-                output_path=str(output_path)
-            )
-            if success:
-                print(f"✅ Created sample glossary: {output_path}")
-            else:
-                print(f"❌ Failed to create sample glossary")
-                sys.exit(1)
-        
-        elif args.command == 'create-api':
-            success = manager.create_glossary_in_translation_api(
-                language_pair=args.language_pair,
-                glossary_name=args.name
-            )
-            if success:
-                print(f"✅ Successfully created glossary '{args.name}' in Translation API")
-            else:
-                print(f"❌ Failed to create glossary in Translation API")
-                sys.exit(1)
-        
-        elif args.command == 'validate':
-            print(f"🔧 Environment: {args.env}")
-            print(f"📁 Credentials: {config['credentials_path']}")
-            print(f"🔑 Project ID: {config['project_id']}")
-            print(f"🪣 Bucket: {config['bucket_name']}")
-            
-            if os.path.exists(config['credentials_path']):
-                print("✅ Credentials file exists")
-            else:
-                print("❌ Credentials file not found")
-            
-            print(f"🌍 Supported language pairs: {len(Config.SUPPORTED_LANGUAGE_PAIRS)}")
-    
+
+        # Execute selected operation
+        if operation == "Upload CSV glossary to Cloud Storage":
+            handle_upload(manager, environment)
+        elif operation == "Download CSV glossary from Cloud Storage":
+            handle_download(manager, environment)
+        elif operation == "List available glossaries":
+            handle_list(manager)
+        elif operation == "Validate environment configuration":
+            handle_validate(config, environment)
+
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         sys.exit(1)
+
+
+def handle_upload(manager: GlossaryManager, environment: str):
+    """Handle upload operation."""
+    print(f"\n📤 Upload CSV Glossary to Cloud Storage ({environment})")
+    print("-" * 50)
+
+    # Get file to upload
+    filename = get_file_input("Select CSV file to upload:")
+    if not filename:
+        print("👋 Upload canceled.")
+        return
+
+    # Get language pair
+    language_pair = get_user_choice(Config.SUPPORTED_LANGUAGE_PAIRS, "Select language pair:")
+    if not language_pair:
+        print("👋 Upload canceled.")
+        return
+
+    # Ask about overwrite
+    overwrite_choice = get_user_choice(["Yes", "No"], "Overwrite existing file?")
+    if not overwrite_choice:
+        print("👋 Upload canceled.")
+        return
+
+    overwrite = overwrite_choice == "Yes"
+
+    # Perform upload
+    file_path = Path('glossaries') / filename
+    success = manager.upload_glossary_csv(
+        local_file_path=str(file_path),
+        language_pair=language_pair,
+        overwrite=overwrite
+    )
+
+    if success:
+        print(f"✅ Successfully uploaded {file_path} for {language_pair}")
+    else:
+        print(f"❌ Failed to upload {file_path}")
+
+
+def handle_download(manager: GlossaryManager, environment: str):
+    """Handle download operation."""
+    print(f"\n📥 Download CSV Glossary from Cloud Storage ({environment})")
+    print("-" * 50)
+
+    # Get language pair
+    language_pair = get_user_choice(Config.SUPPORTED_LANGUAGE_PAIRS, "Select language pair:")
+    if not language_pair:
+        print("👋 Download canceled.")
+        return
+
+    # Ask for custom output filename
+    custom_filename = get_text_input("Enter custom output filename (or press Enter for auto-generated):", allow_empty=True)
+
+    # Perform download
+    output_path = None
+    if custom_filename:
+        glossaries_path = Path('glossaries')
+        glossaries_path.mkdir(exist_ok=True)
+        output_path = str(glossaries_path / custom_filename)
+
+    success = manager.download_glossary_csv(
+        language_pair=language_pair,
+        local_file_path=output_path
+    )
+
+    if success:
+        if output_path:
+            print(f"✅ Successfully downloaded {language_pair} to {output_path}")
+        else:
+            auto_path = manager._generate_glossary_filename(language_pair)
+            print(f"✅ Successfully downloaded {language_pair} to {auto_path}")
+    else:
+        print(f"❌ Failed to download {language_pair}")
+
+
+def handle_list(manager: GlossaryManager):
+    """Handle list operation."""
+    print(f"\n📋 List Available Glossaries")
+    print("-" * 50)
+
+    list_type = get_user_choice(["Cloud Storage", "Translation API"], "Select type to list:")
+    if not list_type:
+        print("👋 List operation canceled.")
+        return
+
+    if list_type == "Cloud Storage":
+        glossaries = manager.list_available_glossaries()
+        if glossaries:
+            print("\n📋 Available glossaries in Cloud Storage:")
+            for lang_pair in glossaries:
+                print(f"  • {lang_pair}")
+        else:
+            print("\n📋 No glossaries found in Cloud Storage")
+    else:  # Translation API
+        glossaries = manager.list_translation_glossaries()
+        if glossaries:
+            print("\n📋 Available glossaries in Translation API:")
+            for glossary in glossaries:
+                print(f"  • {glossary['name']} ({glossary['language_pair']}) - {glossary['state']}")
+        else:
+            print("\n📋 No glossaries found in Translation API")
+
+
+
+
+
+def handle_validate(config: dict, environment: str):
+    """Handle validate operation."""
+    print(f"\n🔧 Environment Configuration Validation ({environment})")
+    print("-" * 50)
+
+    print(f"🔧 Environment: {environment}")
+    print(f"📁 Credentials: {config['credentials_path']}")
+    print(f"🔑 Project ID: {config['project_id']}")
+    print(f"🪣 Bucket: {config['bucket_name']}")
+
+    if os.path.exists(config['credentials_path']):
+        print("✅ Credentials file exists")
+    else:
+        print("❌ Credentials file not found")
+
+    print(f"🌍 Supported language pairs: {len(Config.SUPPORTED_LANGUAGE_PAIRS)}")
+    print("Available language pairs:")
+    for lang_pair in Config.SUPPORTED_LANGUAGE_PAIRS:
+        print(f"  • {lang_pair}")
 
 
 if __name__ == '__main__':

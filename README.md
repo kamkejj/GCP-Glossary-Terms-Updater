@@ -41,6 +41,7 @@ The project uses environment variables for configuration, making it easy to mana
 ### Environment Variables Setup
 
 1. **Copy the example environment file:**
+
    ```bash
    cp .env.example .env
    ```
@@ -94,54 +95,80 @@ If you prefer to edit `config.py` directly, you can still do so. The environment
 
 ## Usage
 
-### Command Line Interface
+### Interactive Command Line Interface
 
-The project includes a comprehensive CLI for easy operations:
+The project includes a user-friendly interactive CLI that guides you through each operation with prompts and selections:
 
-**Note:** All glossary files are automatically managed in the `glossaries/` folder. When uploading, specify only the filename (e.g., `glossary.csv`) and it will be looked for in the `glossaries/` folder. When downloading, the filename is automatically generated based on the language pair (e.g., `en-es` becomes `en_es_glossary.csv`), but you can also specify a custom filename.
+**Note:** All glossary files are automatically managed in the `glossaries/` folder. The interactive CLI will show you available files and let you select from lists instead of typing commands.
 
-#### Validate Environment
+#### Running the Interactive CLI
 
 ```bash
-python cli.py --env dev validate
+python cli.py
 ```
 
-#### Upload a Glossary
+The CLI will guide you through:
 
-```bash
-python cli.py --env dev upload glossary.csv en-es --overwrite
+1. **Environment Selection**: Choose between `dev` or `prod`
+2. **Operation Selection**: Choose from available operations:
+   - Upload CSV glossary to Cloud Storage
+   - Download CSV glossary from Cloud Storage
+   - List available glossaries
+   - Validate environment configuration
+3. **Language Pair Selection**: Choose from supported language pairs
+4. **File Selection**: Browse and select CSV files from the `glossaries/` folder
+5. **Additional Options**: Configure overwrite settings, custom filenames, etc.
+
+#### Example Interactive Session
+
 ```
+🌍 Glossary Transfer CLI
+==================================================
 
-#### Download a Glossary
+Select environment:
+  1. dev
+  2. prod
+  3. Cancel
 
-```bash
-# Download with auto-generated filename (recommended)
-python cli.py --env dev download en-es
+Enter your choice (1-3): 1
 
-# Download with custom filename
-python cli.py --env dev download en-es --output custom_glossary.csv
-```
+Select operation:
+  1. Upload CSV glossary to Cloud Storage
+  2. Download CSV glossary from Cloud Storage
+  3. List available glossaries
+  4. Validate environment configuration
+  5. Cancel
 
-#### List Available Glossaries
+Enter your choice (1-5): 1
 
-```bash
-# List glossaries in Cloud Storage
-python cli.py --env dev list --type storage
+📤 Upload CSV Glossary to Cloud Storage (dev)
+--------------------------------------------------
 
-# List glossaries in Translation API
-python cli.py --env dev list --type api
-```
+Select CSV file to upload:
+Available CSV files:
+  1. sample_glossary.csv
+  2. my_glossary.csv
+  3. Cancel
 
-#### Create Sample Glossary
+Enter your choice (1-3): 1
 
-```bash
-python cli.py --env dev sample en-es sample_glossary.csv
-```
+Select language pair:
+  1. en-es
+  2. en-fr
+  3. en-bs
+  4. en-sw
+  5. Cancel
 
-#### Create Glossary in Translation API
+Enter your choice (1-5): 1
 
-```bash
-python cli.py --env dev create-api en-es my-glossary-name
+Overwrite existing file?
+  1. Yes
+  2. No
+  3. Cancel
+
+Enter your choice (1-3): 2
+
+✅ Successfully uploaded glossaries/sample_glossary.csv for en-es
 ```
 
 ### Programmatic Usage
