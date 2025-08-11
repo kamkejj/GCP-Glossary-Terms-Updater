@@ -1,0 +1,8 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+* Use newer versions of Python and Python packages
+* Follow Python coding standards

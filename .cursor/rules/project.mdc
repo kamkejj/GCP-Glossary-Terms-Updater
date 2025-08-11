@@ -1,0 +1,8 @@
+---
+
+description: google translation glossary and storage file transfer
+globs:
+alwaysApply: true
+---
+
+* We are using the Goolge Translation version 3 using the glossary feature and the glossaries are stored on cloud storage
