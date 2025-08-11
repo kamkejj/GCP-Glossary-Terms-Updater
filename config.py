@@ -4,36 +4,38 @@ Configuration settings for the Glossary Transfer project.
 
 import os
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class Config:
     """Configuration class for managing different environments."""
 
-    # Environment settings
+    # Environment settings - now using environment variables
     ENVIRONMENTS = {
         'dev': {
-            'credentials_file': 'auth_files/dom-dx-translation-dev-da60bb26e907.json',
-            'project_id': 'dom-dx-translation-dev',  # Update with your actual project ID
-            'bucket_name': 'dom-dx-translation-dev-bucket',  # Update with your actual bucket name
+            'credentials_file': os.getenv('DEV_CREDENTIALS_FILE', 'auth_files/dom-dx-translation-dev-da60bb26e907.json'),
+            'project_id': os.getenv('DEV_PROJECT_ID', 'dom-dx-translation-dev'),
+            'bucket_name': os.getenv('DEV_BUCKET_NAME', 'dom-dx-translation-dev-bucket'),
         },
         'prod': {
-            'credentials_file': 'auth_files/dom-dx-translation-prod-8ae379a2799e.json',
-            'project_id': 'dom-dx-translation-prod',  # Update with your actual project ID
-            'bucket_name': 'dom-dx-translation-prod-bucket',  # Update with your actual bucket name
+            'credentials_file': os.getenv('PROD_CREDENTIALS_FILE', 'auth_files/dom-dx-translation-prod-8ae379a2799e.json'),
+            'project_id': os.getenv('PROD_PROJECT_ID', 'dom-dx-translation-prod'),
+            'bucket_name': os.getenv('PROD_BUCKET_NAME', 'dom-dx-translation-prod-bucket'),
         }
     }
 
-    # Supported language pairs
-    SUPPORTED_LANGUAGE_PAIRS = [
-        'en-es', 'en-fr', 'en-bs', 'en-sw'
-    ]
+    # Supported language pairs - now configurable via environment variable
+    SUPPORTED_LANGUAGE_PAIRS = os.getenv('SUPPORTED_LANGUAGE_PAIRS', 'en-es,en-fr,en-bs,en-sw').split(',')
 
     # CSV file settings
     CSV_SETTINGS = {
-        'encoding': 'utf-8',
-        'delimiter': ',',
-        'quotechar': '"',
-        'index': False
+        'encoding': os.getenv('CSV_ENCODING', 'utf-8'),
+        'delimiter': os.getenv('CSV_DELIMITER', ','),
+        'quotechar': os.getenv('CSV_QUOTECHAR', '"'),
+        'index': os.getenv('CSV_INDEX', 'False').lower() == 'true'
     }
 
     @classmethod
@@ -88,3 +90,13 @@ class Config:
             List of environment names
         """
         return list(cls.ENVIRONMENTS.keys())
+
+    @classmethod
+    def get_current_environment(cls) -> str:
+        """
+        Get the current environment from environment variable.
+
+        Returns:
+            Current environment name (defaults to 'dev')
+        """
+        return os.getenv('ENVIRONMENT', 'dev')

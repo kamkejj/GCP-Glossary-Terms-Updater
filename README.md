@@ -31,27 +31,66 @@ A Python solution for managing CSV glossary files with Google Cloud Storage and 
    ```
 
 3. **Configure your environment:**
-   - Update the `config.py` file with your actual project IDs and bucket names
+   - Copy `.env.example` to `.env` and update with your actual values
    - Ensure your service account JSON files are in the project directory
 
 ## Configuration
 
-Edit `config.py` to match your Google Cloud setup:
+The project uses environment variables for configuration, making it easy to manage different environments and sensitive data.
 
-```python
-ENVIRONMENTS = {
-    'dev': {
-        'credentials_file': 'auth_files/dom-dx-translation-dev-da60bb26e907.json',
-        'project_id': 'your-dev-project-id',  # Update this
-        'bucket_name': 'your-dev-bucket-name',  # Update this
-    },
-    'prod': {
-        'credentials_file': 'auth_files/dom-dx-translation-prod-8ae379a2799e.json',
-        'project_id': 'your-prod-project-id',  # Update this
-        'bucket_name': 'your-prod-bucket-name',  # Update this
-    }
-}
-```
+### Environment Variables Setup
+
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit the `.env` file** with your actual values:
+
+   ```bash
+   # Current environment (dev or prod)
+   ENVIRONMENT=dev
+
+   # Development environment settings
+   DEV_CREDENTIALS_FILE=auth_files/dom-dx-translation-dev-da60bb26e907.json
+   DEV_PROJECT_ID=your-dev-project-id
+   DEV_BUCKET_NAME=your-dev-bucket-name
+
+   # Production environment settings
+   PROD_CREDENTIALS_FILE=auth_files/dom-dx-translation-prod-8ae379a2799e.json
+   PROD_PROJECT_ID=your-prod-project-id
+   PROD_BUCKET_NAME=your-prod-bucket-name
+
+   # Supported language pairs (comma-separated)
+   SUPPORTED_LANGUAGE_PAIRS=en-es,en-fr,en-bs,en-sw
+
+   # CSV file settings
+   CSV_ENCODING=utf-8
+   CSV_DELIMITER=,
+   CSV_QUOTECHAR="
+   CSV_INDEX=False
+   ```
+
+### Environment Variables Reference
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENVIRONMENT` | Current environment (dev/prod) | `dev` |
+| `DEV_CREDENTIALS_FILE` | Path to dev credentials JSON file | `auth_files/dom-dx-translation-dev-da60bb26e907.json` |
+| `DEV_PROJECT_ID` | Google Cloud dev project ID | `dom-dx-translation-dev` |
+| `DEV_BUCKET_NAME` | Google Cloud Storage dev bucket name | `dom-dx-translation-dev-bucket` |
+| `PROD_CREDENTIALS_FILE` | Path to prod credentials JSON file | `auth_files/dom-dx-translation-prod-8ae379a2799e.json` |
+| `PROD_PROJECT_ID` | Google Cloud prod project ID | `dom-dx-translation-prod` |
+| `PROD_BUCKET_NAME` | Google Cloud Storage prod bucket name | `dom-dx-translation-prod-bucket` |
+| `SUPPORTED_LANGUAGE_PAIRS` | Comma-separated list of language pairs | `en-es,en-fr,en-bs,en-sw` |
+| `CSV_ENCODING` | CSV file encoding | `utf-8` |
+| `CSV_DELIMITER` | CSV delimiter character | `,` |
+| `CSV_QUOTECHAR` | CSV quote character | `"` |
+| `CSV_INDEX` | Whether to include index in CSV | `False` |
+
+### Legacy Configuration (Optional)
+
+If you prefer to edit `config.py` directly, you can still do so. The environment variables will override the hardcoded values.
 
 ## Usage
 
