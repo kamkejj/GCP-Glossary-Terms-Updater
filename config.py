@@ -12,12 +12,12 @@ class Config:
     # Environment settings
     ENVIRONMENTS = {
         'dev': {
-            'credentials_file': 'dom-dx-translation-dev-da60bb26e907.json',
+            'credentials_file': 'auth_files/dom-dx-translation-dev-da60bb26e907.json',
             'project_id': 'dom-dx-translation-dev',  # Update with your actual project ID
             'bucket_name': 'dom-dx-translation-dev-bucket',  # Update with your actual bucket name
         },
         'prod': {
-            'credentials_file': 'dom-dx-translation-prod-8ae379a2799e.json',
+            'credentials_file': 'auth_files/dom-dx-translation-prod-8ae379a2799e.json',
             'project_id': 'dom-dx-translation-prod',  # Update with your actual project ID
             'bucket_name': 'dom-dx-translation-prod-bucket',  # Update with your actual bucket name
         }

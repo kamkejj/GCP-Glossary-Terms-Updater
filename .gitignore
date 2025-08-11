@@ -193,6 +193,7 @@ $RECYCLE.BIN/
 *~
 
 # Google Cloud Storage credentials and config
+auth_files/
 *.json
 !requirements.txt
 !README.md
@@ -202,3 +203,5 @@ $RECYCLE.BIN/
 downloaded_glossary.csv
 *.csv
 !example_glossary.csv
+
+glossaries/

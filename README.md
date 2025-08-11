@@ -41,12 +41,12 @@ Edit `config.py` to match your Google Cloud setup:
 ```python
 ENVIRONMENTS = {
     'dev': {
-        'credentials_file': 'dom-dx-translation-dev-da60bb26e907.json',
+        'credentials_file': 'auth_files/dom-dx-translation-dev-da60bb26e907.json',
         'project_id': 'your-dev-project-id',  # Update this
         'bucket_name': 'your-dev-bucket-name',  # Update this
     },
     'prod': {
-        'credentials_file': 'dom-dx-translation-prod-8ae379a2799e.json',
+        'credentials_file': 'auth_files/dom-dx-translation-prod-8ae379a2799e.json',
         'project_id': 'your-prod-project-id',  # Update this
         'bucket_name': 'your-prod-bucket-name',  # Update this
     }
@@ -177,8 +177,9 @@ glossary_transfer/
 ├── requirements.txt        # Python dependencies
 ├── README.md              # This file
 ├── glossaries/            # Folder for all glossary CSV files
-├── dom-dx-translation-dev-da60bb26e907.json    # Dev credentials
-└── dom-dx-translation-prod-8ae379a2799e.json   # Prod credentials
+└── auth_files/            # Folder for authentication files
+    ├── dom-dx-translation-dev-da60bb26e907.json    # Dev credentials
+    └── dom-dx-translation-prod-8ae379a2799e.json   # Prod credentials
 ```
 
 ## Error Handling

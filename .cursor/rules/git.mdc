@@ -1,0 +1,129 @@
+---
+alwaysApply: true
+---
+
+# Cursor Rules
+
+## Git Commit Style Rule
+
+Always follow the Conventional Commits specification (<https://www.conventionalcommits.org/en/v1.0.0/>) for commit messages:
+
+### Commit Message Structure
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Required Elements
+
+1. **Type prefix**: Must start with a type (feat, fix, docs, style, refactor, perf, test, chore, ci, build, etc.)
+2. **Description**: Short summary immediately after the colon and space
+3. **Colon and space**: Must have ": " after type/scope
+
+### Type Guidelines
+
+- **feat**: New features (correlates with MINOR in SemVer)
+- **fix**: Bug fixes (correlates with PATCH in SemVer)
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, missing semicolons, etc.)
+- **refactor**: Code refactoring
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependencies, etc.
+- **ci**: CI/CD changes
+- **build**: Build system changes
+
+### Optional Elements
+
+- **Scope**: Provide context in parentheses, e.g., `feat(parser):`
+- **Body**: Longer description after blank line
+- **Footer**: Additional metadata after blank line
+- **Breaking Change**: Use `!` after type/scope or `BREAKING CHANGE:` footer
+
+### Examples
+
+- `feat: add user authentication system`
+- `fix(auth): resolve login token expiration issue`
+- `docs: update API documentation`
+- `refactor(api)!: restructure endpoint responses`
+- `chore: update dependencies`
+
+### Breaking Changes
+
+- Use `!` after type/scope: `feat!: breaking change`
+- Or use footer: `BREAKING CHANGE: description`
+
+### Best Practices
+
+- Use imperative mood ("add" not "added")
+- Keep description under 72 characters
+- Separate subject from body with blank line
+- Use body to explain what and why, not how
+- Reference issues in footer when applicable
+
+# Cursor Rules
+
+## Git Commit Style Rule
+
+Always follow the Conventional Commits specification (<https://www.conventionalcommits.org/en/v1.0.0/>) for commit messages:
+
+### Commit Message Structure
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Required Elements
+
+1. **Type prefix**: Must start with a type (feat, fix, docs, style, refactor, perf, test, chore, ci, build, etc.)
+2. **Description**: Short summary immediately after the colon and space
+3. **Colon and space**: Must have ": " after type/scope
+
+### Type Guidelines
+
+- **feat**: New features (correlates with MINOR in SemVer)
+- **fix**: Bug fixes (correlates with PATCH in SemVer)
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, missing semicolons, etc.)
+- **refactor**: Code refactoring
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependencies, etc.
+- **ci**: CI/CD changes
+- **build**: Build system changes
+
+### Optional Elements
+
+- **Scope**: Provide context in parentheses, e.g., `feat(parser):`
+- **Body**: Longer description after blank line
+- **Footer**: Additional metadata after blank line
+- **Breaking Change**: Use `!` after type/scope or `BREAKING CHANGE:` footer
+
+### Examples
+
+- `feat: add user authentication system`
+- `fix(auth): resolve login token expiration issue`
+- `docs: update API documentation`
+- `refactor(api)!: restructure endpoint responses`
+- `chore: update dependencies`
+
+### Breaking Changes
+
+- Use `!` after type/scope: `feat!: breaking change`
+- Or use footer: `BREAKING CHANGE: description`
+
+### Best Practices
+
+- Use imperative mood ("add" not "added")
+- Keep description under 72 characters
+- Separate subject from body with blank line
+- Use body to explain what and why, not how
+- Reference issues in footer when applicable
