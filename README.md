@@ -1,17 +1,19 @@
 # Glossary Transfer for Google Translation V3 API
 
-A Python solution for managing CSV glossary files with Google Cloud Storage and the Google Translation V3 API. This project provides tools to upload, download, and manage translation glossaries across different environments.
+A Python solution for managing CSV glossary files with Google Cloud Storage and the Google Translation V3 API. This project provides tools to upload, download, and manage translation glossaries across different environments, with support for both regular and IWD (Iowa Workforce Development) glossaries.
 
 ## Features
 
 - 📤 **Upload CSV glossaries** to Google Cloud Storage
-- 📥 **Download CSV glossaries** from Google Cloud Storage
+- 📥 **Download CSV glossaries** from Cloud Storage
 - 🔧 **Create glossaries** in Google Translation V3 API
 - 📋 **List available glossaries** in both Cloud Storage and Translation API
 - 🌍 **Support for multiple language pairs**
+- 🏢 **IWD glossary support** - Special handling for Iowa Workforce Development glossaries
 - 🔄 **Environment management** (dev/prod)
 - 🛠️ **Command-line interface** for easy operations
 - ✅ **CSV validation** and error handling
+- 📁 **Smart file organization** - Separates regular and IWD glossaries
 
 ## Prerequisites
 
@@ -93,6 +95,22 @@ The project uses environment variables for configuration, making it easy to mana
 
 If you prefer to edit `config.py` directly, you can still do so. The environment variables will override the hardcoded values.
 
+## Glossary Types
+
+The system supports two types of glossaries:
+
+### Regular Glossaries
+- Standard translation glossaries
+- Filename format: `{source}_{target}_glossary.csv` (e.g., `en_es_glossary.csv`)
+- Language pair format: `{source}-{target}` (e.g., `en-es`)
+
+### IWD Glossaries
+- Special glossaries for Iowa Workforce Development
+- Filename format: `iwd_{source}_{target}_glossary.csv` (e.g., `iwd_en_bs_glossary.csv`)
+- Language pair format: `iwd-{source}-{target}` (e.g., `iwd-en-bs`)
+
+The system automatically detects the glossary type based on the filename and provides appropriate language pair options during upload and download operations.
+
 ## Usage
 
 ### Interactive Command Line Interface
@@ -115,8 +133,9 @@ The CLI will guide you through:
    - Download CSV glossary from Cloud Storage
    - List available glossaries
    - Validate environment configuration
-3. **Language Pair Selection**: Choose from supported language pairs
-4. **File Selection**: Browse and select CSV files from the `glossaries/` folder
+3. **File Selection**: Browse and select CSV files from the `glossaries/` folder
+   - Files are organized by type (Regular vs IWD glossaries)
+4. **Language Pair Selection**: Choose from appropriate language pairs based on file type
 5. **Additional Options**: Configure overwrite settings, custom filenames, etc.
 
 #### Example Interactive Session
@@ -146,20 +165,23 @@ Enter your choice (1-5): 1
 
 Select CSV file to upload:
 Available CSV files:
-  1. sample_glossary.csv
-  2. my_glossary.csv
-  3. Cancel
+  Regular glossaries:
+    1. en_es_glossary.csv
+    2. en_fr_glossary.csv
+  IWD glossaries:
+    3. iwd_en_bs_glossary.csv
+    4. Cancel
 
-Enter your choice (1-3): 1
+Enter your choice (1-4): 3
 
-Select language pair:
-  1. en-es
-  2. en-fr
-  3. en-bs
-  4. en-sw
+Select IWD language pair:
+  1. iwd-en-es
+  2. iwd-en-fr
+  3. iwd-en-bs
+  4. iwd-en-sw
   5. Cancel
 
-Enter your choice (1-5): 1
+Enter your choice (1-5): 3
 
 Overwrite existing file?
   1. Yes
@@ -168,7 +190,7 @@ Overwrite existing file?
 
 Enter your choice (1-3): 2
 
-✅ Successfully uploaded glossaries/sample_glossary.csv for en-es
+✅ Successfully uploaded glossaries/iwd_en_bs_glossary.csv for iwd-en-bs
 ```
 
 ### Programmatic Usage
@@ -187,28 +209,36 @@ manager = GlossaryManager(
     bucket_name=config['bucket_name']
 )
 
-# Upload a glossary
+# Upload a regular glossary
 success = manager.upload_glossary_csv(
-    local_file_path='glossaries/my_glossary.csv',
+    local_file_path='glossaries/en_es_glossary.csv',
     language_pair='en-es',
     overwrite=True
 )
 
-# Download a glossary (with auto-generated filename)
+# Upload an IWD glossary
+success = manager.upload_glossary_csv(
+    local_file_path='glossaries/iwd_en_bs_glossary.csv',
+    language_pair='iwd-en-bs',
+    overwrite=True
+)
+
+# Download a regular glossary (with auto-generated filename)
 success = manager.download_glossary_csv(
     language_pair='en-es'
     # local_file_path is optional - will auto-generate filename
 )
 
-# Download a glossary with custom filename
+# Download an IWD glossary with custom filename
 success = manager.download_glossary_csv(
-    language_pair='en-es',
-    local_file_path='glossaries/custom_glossary.csv'
+    language_pair='iwd-en-bs',
+    local_file_path='glossaries/custom_iwd_glossary.csv'
 )
 
-# List available glossaries
+# List available glossaries (includes both regular and IWD)
 glossaries = manager.list_available_glossaries()
 print(f"Available glossaries: {glossaries}")
+# Output: ['en-es', 'en-fr', 'iwd-en-bs', 'iwd-en-sw']
 ```
 
 ## Auto-Generated Filenames
@@ -216,7 +246,7 @@ print(f"Available glossaries: {glossaries}")
 When downloading glossaries, the system automatically generates filenames based on the language pair:
 
 - **Regular glossaries**: `en-es` → `glossaries/en_es_glossary.csv`
-- **IWD glossaries**: `iwd-en-es` → `glossaries/iwd_en_es_glossary.csv`
+- **IWD glossaries**: `iwd-en-bs` → `glossaries/iwd_en_bs_glossary.csv`
 
 This ensures consistent naming conventions and eliminates the need to remember specific filenames. You can still specify a custom filename if needed.
 
@@ -242,14 +272,19 @@ database,base de datos
 
 The system supports various language pairs including:
 
+### Regular Language Pairs
 - `en-es` (English to Spanish)
 - `en-fr` (English to French)
-- `en-de` (English to German)
-- `fr-es` (French to Spanish)
-- `de-fr` (German to French)
-- And many more...
+- `en-bs` (English to Bosnian)
+- `en-sw` (English to Swahili)
 
-See `config.py` for the complete list of supported language pairs.
+### IWD Language Pairs
+- `iwd-en-es` (IWD English to Spanish)
+- `iwd-en-fr` (IWD English to French)
+- `iwd-en-bs` (IWD English to Bosnian)
+- `iwd-en-sw` (IWD English to Swahili)
+
+The system automatically generates IWD variants for all regular language pairs. See `config.py` for the complete list of supported language pairs.
 
 ## File Structure
 
@@ -259,13 +294,32 @@ glossary_transfer/
 ├── config.py               # Configuration settings
 ├── cli.py                  # Command-line interface
 ├── example_usage.py        # Example usage scripts
+├── test_glossary_types.py  # Test script for IWD functionality
 ├── requirements.txt        # Python dependencies
 ├── README.md              # This file
 ├── glossaries/            # Folder for all glossary CSV files
+│   ├── en_es_glossary.csv      # Regular glossary
+│   ├── en_fr_glossary.csv      # Regular glossary
+│   └── iwd_en_bs_glossary.csv  # IWD glossary
 └── auth_files/            # Folder for authentication files
     ├── dom-dx-translation-dev-da60bb26e907.json    # Dev credentials
     └── dom-dx-translation-prod-8ae379a2799e.json   # Prod credentials
 ```
+
+## Testing
+
+Run the test script to verify IWD functionality:
+
+```bash
+python test_glossary_types.py
+```
+
+This will test:
+- IWD vs regular glossary detection
+- Language pair validation
+- Filename generation
+- Configuration methods
+- File organization
 
 ## Error Handling
 
@@ -277,6 +331,8 @@ The system includes comprehensive error handling for:
 - Invalid CSV formats
 - Cloud Storage permissions
 - Translation API quotas
+- Filename/language pair mismatches
+- IWD vs regular glossary validation
 
 ## Examples
 
@@ -315,6 +371,11 @@ This will demonstrate:
    - Check for proper UTF-8 encoding
    - Verify the file is not empty
 
+5. **Filename/Language Pair Mismatch**
+   - Ensure IWD files use `iwd-` prefixed language pairs
+   - Regular files should use standard language pairs
+   - Check that filenames match the expected naming convention
+
 ### Debug Mode
 
 Enable debug logging by modifying the logging level in `glossary_manager.py`:
@@ -341,4 +402,5 @@ For issues and questions:
 
 1. Check the troubleshooting section
 2. Review the example usage
-3. Open an issue in the repository
+3. Run the test script to verify functionality
+4. Open an issue in the repository

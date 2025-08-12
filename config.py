@@ -3,7 +3,7 @@ Configuration settings for the Glossary Transfer project.
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -37,6 +37,25 @@ class Config:
         'quotechar': os.getenv('CSV_QUOTECHAR', '"'),
         'index': os.getenv('CSV_INDEX', 'False').lower() == 'true'
     }
+
+    @classmethod
+    def get_all_language_pairs(cls) -> List[str]:
+        """
+        Get all available language pairs including both regular and IWD variants.
+        
+        Returns:
+            List of all language pairs (regular and IWD)
+        """
+        all_pairs = []
+        
+        # Add regular language pairs
+        all_pairs.extend(cls.SUPPORTED_LANGUAGE_PAIRS)
+        
+        # Add IWD variants
+        for pair in cls.SUPPORTED_LANGUAGE_PAIRS:
+            all_pairs.append(f"iwd-{pair}")
+            
+        return all_pairs
 
     @classmethod
     def get_environment_config(cls, environment: str = 'dev') -> Dict[str, Any]:

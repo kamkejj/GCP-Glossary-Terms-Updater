@@ -76,7 +76,7 @@ class GlossaryManager:
 
         Args:
             local_file_path: Path to the local CSV file
-            language_pair: Language pair (e.g., 'en-es', 'fr-de')
+            language_pair: Language pair (e.g., 'en-es', 'fr-de', 'iwd-en-es')
             overwrite: Whether to overwrite existing file
 
         Returns:
@@ -86,6 +86,15 @@ class GlossaryManager:
             # Validate file exists
             if not os.path.exists(local_file_path):
                 self.logger.error(f"File not found: {local_file_path}")
+                return False
+
+            # Get filename for validation
+            filename = os.path.basename(local_file_path)
+            
+            # Validate filename matches language pair
+            if not self._validate_glossary_filename(filename, language_pair):
+                self.logger.error(f"Filename '{filename}' does not match language pair '{language_pair}'")
+                self.logger.error(f"Expected: {self._generate_glossary_filename(language_pair).split('/')[-1]}")
                 return False
 
             # Validate CSV format
@@ -208,6 +217,8 @@ class GlossaryManager:
                             language_pair = filename.replace('_', '-')
                             glossaries.append(language_pair)
 
+            # Sort the list for better presentation
+            glossaries.sort()
             return list(set(glossaries))  # Remove duplicates
 
         except Exception as e:
@@ -312,6 +323,42 @@ class GlossaryManager:
             filename = f"{language_pair.replace('-', '_')}_glossary.csv"
 
         return str(glossaries_dir / filename)
+
+    def _is_iwd_glossary(self, filename: str) -> bool:
+        """
+        Check if a filename corresponds to an IWD glossary.
+        
+        Args:
+            filename: The filename to check
+            
+        Returns:
+            bool: True if it's an IWD glossary, False otherwise
+        """
+        return filename.startswith('iwd_')
+
+    def _validate_glossary_filename(self, filename: str, language_pair: str) -> bool:
+        """
+        Validate that a filename matches the expected naming convention for a language pair.
+        
+        Args:
+            filename: The filename to validate
+            language_pair: The language pair (e.g., 'en-es' or 'iwd-en-es')
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        try:
+            if language_pair.startswith('iwd-'):
+                # IWD glossary: iwd-en-es -> iwd_en_es_glossary.csv
+                clean_pair = language_pair[4:]  # Remove 'iwd-' prefix
+                expected_filename = f"iwd_{clean_pair.replace('-', '_')}_glossary.csv"
+            else:
+                # Regular glossary: en-es -> en_es_glossary.csv
+                expected_filename = f"{language_pair.replace('-', '_')}_glossary.csv"
+            
+            return filename == expected_filename
+        except Exception:
+            return False
 
     def _validate_csv_format(self, file_path: str) -> bool:
         """

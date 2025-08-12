@@ -72,21 +72,43 @@ def get_file_input(prompt: str, folder: str = "glossaries") -> Optional[str]:
         print(f"❌ No CSV files found in '{folder}' folder.")
         return None
 
+    # Separate IWD and regular files
+    iwd_files = [f for f in files if f.startswith('iwd_')]
+    regular_files = [f for f in files if not f.startswith('iwd_')]
+
     print(f"\n{prompt}")
     print("Available CSV files:")
-    for i, file in enumerate(files, 1):
-        print(f"  {i}. {file}")
-    print(f"  {len(files) + 1}. Cancel")
+    
+    file_counter = 1
+    file_mapping = {}
+    
+    # Display regular files first
+    if regular_files:
+        print("  Regular glossaries:")
+        for file in regular_files:
+            print(f"    {file_counter}. {file}")
+            file_mapping[file_counter] = file
+            file_counter += 1
+    
+    # Display IWD files
+    if iwd_files:
+        print("  IWD glossaries:")
+        for file in iwd_files:
+            print(f"    {file_counter}. {file}")
+            file_mapping[file_counter] = file
+            file_counter += 1
+    
+    print(f"  {file_counter}. Cancel")
 
     try:
-        choice = input(f"\nEnter your choice (1-{len(files) + 1}): ").strip()
+        choice = input(f"\nEnter your choice (1-{file_counter}): ").strip()
         choice_num = int(choice)
 
-        if choice_num == len(files) + 1:
+        if choice_num == file_counter:
             return None
 
-        if 1 <= choice_num <= len(files):
-            return files[choice_num - 1]
+        if 1 <= choice_num < file_counter:
+            return file_mapping[choice_num]
         else:
             print("❌ Invalid choice.")
             return None
@@ -188,8 +210,18 @@ def handle_upload(manager: GlossaryManager, environment: str):
         print("👋 Upload canceled.")
         return
 
-    # Get language pair
-    language_pair = get_user_choice(Config.SUPPORTED_LANGUAGE_PAIRS, "Select language pair:")
+    # Determine if this is an IWD glossary based on filename
+    is_iwd = filename.startswith('iwd_')
+    
+    # Get language pair - show appropriate options based on file type
+    if is_iwd:
+        # For IWD files, show only IWD language pairs
+        iwd_pairs = [f"iwd-{pair}" for pair in Config.SUPPORTED_LANGUAGE_PAIRS]
+        language_pair = get_user_choice(iwd_pairs, "Select IWD language pair:")
+    else:
+        # For regular files, show only regular language pairs
+        language_pair = get_user_choice(Config.SUPPORTED_LANGUAGE_PAIRS, "Select language pair:")
+    
     if not language_pair:
         print("👋 Upload canceled.")
         return
@@ -221,8 +253,15 @@ def handle_download(manager: GlossaryManager, environment: str):
     print(f"\n📥 Download CSV Glossary from Cloud Storage ({environment})")
     print("-" * 50)
 
-    # Get language pair
-    language_pair = get_user_choice(Config.SUPPORTED_LANGUAGE_PAIRS, "Select language pair:")
+    # Get all available glossaries from Cloud Storage
+    available_glossaries = manager.list_available_glossaries()
+    
+    if not available_glossaries:
+        print("❌ No glossaries found in Cloud Storage")
+        return
+
+    # Get language pair from available glossaries
+    language_pair = get_user_choice(available_glossaries, "Select language pair to download:")
     if not language_pair:
         print("👋 Download canceled.")
         return
@@ -300,8 +339,18 @@ def handle_validate(config: dict, environment: str):
 
     print(f"🌍 Supported language pairs: {len(Config.SUPPORTED_LANGUAGE_PAIRS)}")
     print("Available language pairs:")
+    
+    # Display regular language pairs
+    print("  Regular glossaries:")
     for lang_pair in Config.SUPPORTED_LANGUAGE_PAIRS:
-        print(f"  • {lang_pair}")
+        print(f"    • {lang_pair}")
+    
+    # Display IWD language pairs
+    print("  IWD glossaries:")
+    for lang_pair in Config.SUPPORTED_LANGUAGE_PAIRS:
+        print(f"    • iwd-{lang_pair}")
+    
+    print(f"  Total available pairs: {len(Config.get_all_language_pairs())}")
 
 
 if __name__ == '__main__':
