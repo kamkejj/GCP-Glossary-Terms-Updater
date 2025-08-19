@@ -42,8 +42,7 @@ class GlossaryManager:
 
         # Supported languages (can be extended)
         self.supported_languages = [
-            'en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh',
-            'ar', 'hi', 'ru', 'sv', 'da', 'no', 'fi', 'pl', 'tr', 'th'
+            'en', 'es', 'fr', 'bs', 'sw'
         ]
 
     def _setup_clients(self):
