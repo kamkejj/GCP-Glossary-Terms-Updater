@@ -362,6 +362,7 @@ class GlossaryManager:
     def _validate_csv_format(self, file_path: str) -> bool:
         """
         Validate that the CSV file has the correct format for glossaries.
+        Google Cloud Translate glossaries don't use header rows.
 
         Args:
             file_path: Path to the CSV file
@@ -370,7 +371,8 @@ class GlossaryManager:
             bool: True if valid, False otherwise
         """
         try:
-            df = pd.read_csv(file_path)
+            # Read CSV without headers since Google Translate doesn't use them
+            df = pd.read_csv(file_path, header=None)
 
             # Check if it has at least 2 columns (source and target)
             if len(df.columns) < 2:
