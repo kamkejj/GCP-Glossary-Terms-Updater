@@ -215,30 +215,20 @@ class GlossaryEntryManager:
             if "termsPair" in existing_entry:
                 # Convert terms to termsPair format
                 if len(terms) >= 2:
-                    # Find source and target terms
-                    source_term = None
-                    target_term = None
+                    # Use first two terms as source and target
+                    source_term = terms[0]
+                    target_term = terms[1]
 
-                    for term in terms:
-                        if term.get("language_code") == "en":
-                            source_term = term
-                        elif term.get("language_code") == "fr":
-                            target_term = term
-
-                    if source_term and target_term:
-                        request_body["termsPair"] = {
-                            "sourceTerm": {
-                                "languageCode": source_term["language_code"],
-                                "text": source_term["text"]
-                            },
-                            "targetTerm": {
-                                "languageCode": target_term["language_code"],
-                                "text": target_term["text"]
-                            }
+                    request_body["termsPair"] = {
+                        "sourceTerm": {
+                            "languageCode": source_term["language_code"],
+                            "text": source_term["text"]
+                        },
+                        "targetTerm": {
+                            "languageCode": target_term["language_code"],
+                            "text": target_term["text"]
                         }
-                    else:
-                        print("Error: Need both English (source) and French (target) terms for termsPair format")
-                        return False
+                    }
                 else:
                     print("Error: Need at least 2 terms for termsPair format")
                     return False
