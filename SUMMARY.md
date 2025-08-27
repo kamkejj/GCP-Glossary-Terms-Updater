@@ -6,22 +6,24 @@ We've created a comprehensive Python application for managing Google Cloud Trans
 
 ## Key Features
 
-✅ **List Glossary Entries** - Retrieve all entries from a glossary  
-✅ **Get Specific Entry** - Retrieve a single glossary entry by ID  
-✅ **Create New Entry** - Add new entries to a glossary  
-✅ **Update Entry** - Modify existing glossary entries  
-✅ **Delete Entry** - Remove entries from a glossary  
-✅ **Multiple Output Formats** - JSON and table output formats  
-✅ **Comprehensive Error Handling** - User-friendly error messages  
-✅ **REST API Implementation** - Uses Google Cloud Translation v3 REST API directly  
+✅ **List Glossary Entries** - Retrieve all entries from a glossary
+✅ **Get Specific Entry** - Retrieve a single glossary entry by ID
+✅ **Create New Entry** - Add new entries to a glossary
+✅ **Update Entry** - Modify existing glossary entries
+✅ **Delete Entry** - Remove entries from a glossary
+✅ **Multiple Output Formats** - JSON and table output formats
+✅ **Comprehensive Error Handling** - User-friendly error messages
+✅ **REST API Implementation** - Uses Google Cloud Translation v3 REST API directly
 
 ## Files Created
 
 ### Core Application
+
 - **`glossary_manager.py`** - Main application with GlossaryEntryManager class and CLI
 - **`requirements.txt`** - Python dependencies (updated with requests library)
 
 ### Documentation and Examples
+
 - **`README.md`** - Comprehensive documentation
 - **`example_usage.py`** - Example script showing programmatic usage
 - **`demo.py`** - Interactive demo script
@@ -31,12 +33,14 @@ We've created a comprehensive Python application for managing Google Cloud Trans
 ## Technical Implementation
 
 ### Architecture
+
 - **REST API Client**: Uses the Google Cloud Translation v3 REST API directly
 - **Authentication**: Google Cloud service account authentication
 - **Error Handling**: Comprehensive error handling for common scenarios
 - **Type Safety**: Full type hints for better code quality
 
 ### Key Classes
+
 ```python
 class GlossaryEntryManager:
     def __init__(self, project_id, auth_file, location="us-central1")
@@ -52,6 +56,7 @@ class GlossaryEntryManager:
 ### Command Line Interface
 
 **List all entries:**
+
 ```bash
 python glossary_manager.py list \
   --project-id YOUR_PROJECT_ID \
@@ -60,6 +65,7 @@ python glossary_manager.py list \
 ```
 
 **Get a specific entry:**
+
 ```bash
 python glossary_manager.py get \
   --project-id YOUR_PROJECT_ID \
@@ -69,6 +75,7 @@ python glossary_manager.py get \
 ```
 
 **Create a new entry:**
+
 ```bash
 python glossary_manager.py create \
   --project-id YOUR_PROJECT_ID \
@@ -103,6 +110,7 @@ entry_id = manager.create_glossary_entry("your-glossary-id", terms, "Greeting te
 ## Configuration
 
 ### Required Setup
+
 1. **Google Cloud Project** with Cloud Translation API enabled
 2. **Service Account** with appropriate permissions:
    - `cloudtranslate.glossaries.list`
@@ -114,6 +122,7 @@ entry_id = manager.create_glossary_entry("your-glossary-id", terms, "Greeting te
 3. **Service Account JSON File** in the `auth_files/` directory
 
 ### Available Auth Files
+
 - `auth_files/dom-dx-translation-dev-da60bb26e907.json` (Development)
 - `auth_files/dom-dx-translation-prod-8ae379a2799e.json` (Production)
 
@@ -126,6 +135,7 @@ python test_glossary_manager.py
 ```
 
 Tests cover:
+
 - ✅ Initialization
 - ✅ Authentication headers
 - ✅ List glossary entries
@@ -175,6 +185,7 @@ To use the application with real data:
 ## Compliance
 
 The application follows:
+
 - **Python Coding Standards** - PEP 8 style guide
 - **Type Hints** - Full type annotations
 - **Error Handling** - Comprehensive exception handling
@@ -184,6 +195,7 @@ The application follows:
 ## Support
 
 For issues or questions:
+
 1. Check the troubleshooting section in `README.md`
 2. Review the Google Cloud Translation API documentation
 3. Verify your service account permissions
@@ -191,6 +203,6 @@ For issues or questions:
 
 ---
 
-**Status**: ✅ Complete and ready for use  
-**Version**: 1.0.0  
+**Status**: ✅ Complete and ready for use
+**Version**: 1.0.0
 **Last Updated**: 2025-01-27

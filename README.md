@@ -32,9 +32,25 @@ pip install -r requirements.txt
    - Place your service account JSON file in the `auth_files/` directory
    - Ensure the service account has the necessary permissions for Cloud Translation API
 
+4. Configure environment variables (optional):
+   - Copy `.env.example` to `.env`
+   - Update the values in `.env` with your actual project configuration:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and set your values:
+
+```env
+PROJECT_ID=your-actual-project-id
+LOCATION=us-central1
+```
+
 ## Required Permissions
 
 Your service account needs the following permissions:
+
 - `cloudtranslate.glossaries.list`
 - `cloudtranslate.glossaryEntries.list`
 - `cloudtranslate.glossaryEntries.get`
@@ -52,6 +68,16 @@ The application provides a command-line interface for all operations:
 
 #### List Glossary Entries
 
+Using default values from `.env` file:
+
+```bash
+python glossary_manager.py list \
+  --glossary-id YOUR_GLOSSARY_ID \
+  --auth-file auth_files/your-service-account.json
+```
+
+Or override with custom project ID:
+
 ```bash
 python glossary_manager.py list \
   --project-id YOUR_PROJECT_ID \
@@ -61,9 +87,10 @@ python glossary_manager.py list \
 
 #### Get a Specific Entry
 
+Using default values from `.env` file:
+
 ```bash
 python glossary_manager.py get \
-  --project-id YOUR_PROJECT_ID \
   --glossary-id YOUR_GLOSSARY_ID \
   --entry-id ENTRY_ID \
   --auth-file auth_files/your-service-account.json
@@ -71,9 +98,10 @@ python glossary_manager.py get \
 
 #### Create a New Entry
 
+Using default values from `.env` file:
+
 ```bash
 python glossary_manager.py create \
-  --project-id YOUR_PROJECT_ID \
   --glossary-id YOUR_GLOSSARY_ID \
   --terms '[{"language_code": "en", "text": "hello"}, {"language_code": "es", "text": "hola"}]' \
   --description "Greeting terms" \
@@ -82,9 +110,10 @@ python glossary_manager.py create \
 
 #### Update an Entry
 
+Using default values from `.env` file:
+
 ```bash
 python glossary_manager.py update \
-  --project-id YOUR_PROJECT_ID \
   --glossary-id YOUR_GLOSSARY_ID \
   --entry-id ENTRY_ID \
   --terms '[{"language_code": "en", "text": "updated hello"}, {"language_code": "es", "text": "hola actualizado"}]' \
@@ -94,9 +123,10 @@ python glossary_manager.py update \
 
 #### Delete an Entry
 
+Using default values from `.env` file:
+
 ```bash
 python glossary_manager.py delete \
-  --project-id YOUR_PROJECT_ID \
   --glossary-id YOUR_GLOSSARY_ID \
   --entry-id ENTRY_ID \
   --auth-file auth_files/your-service-account.json
@@ -104,7 +134,8 @@ python glossary_manager.py delete \
 
 ### Additional Options
 
-- `--location`: Google Cloud location (default: `us-central1`)
+- `--project-id`: Google Cloud project ID (default: from `.env` file or `PROJECT_ID` environment variable)
+- `--location`: Google Cloud location (default: from `.env` file or `us-central1`)
 - `--page-size`: Number of entries to return per page (default: `100`)
 - `--output`: Output format (`json` or `table`, default: `table`)
 
@@ -146,6 +177,7 @@ To run the example:
    - `AUTH_FILE`: Path to your service account JSON file
 
 2. Run the example:
+
 ```bash
 python example_usage.py
 ```
@@ -153,14 +185,17 @@ python example_usage.py
 ## Glossary Entry Format
 
 Glossary entries consist of:
+
 - **Terms**: A list of terms in different languages
 - **Description**: Optional description of the entry
 
 Each term has:
+
 - `language_code`: ISO language code (e.g., "en", "es", "fr")
 - `text`: The actual term text
 
 Example:
+
 ```json
 {
   "terms": [
@@ -192,13 +227,14 @@ The application provides comprehensive error handling for common issues:
 
 ### Getting Help
 
-- Check the Google Cloud Translation API documentation: https://cloud.google.com/translate/docs
+- Check the Google Cloud Translation API documentation: <https://cloud.google.com/translate/docs>
 - Verify your service account permissions in the Google Cloud Console
 - Ensure your project has the Cloud Translation API enabled
 
 ## API Reference
 
 The application uses the Google Cloud Translation v3 API. For detailed API documentation, see:
+
 - [Cloud Translation API Documentation](https://cloud.google.com/translate/docs)
 - [Glossary Management Guide](https://cloud.google.com/translate/docs/advanced/glossary)
 

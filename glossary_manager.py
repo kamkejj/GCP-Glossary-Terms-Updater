@@ -15,6 +15,7 @@ from typing import Dict, List, Optional, Any
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
+from dotenv import load_dotenv
 
 
 class GlossaryEntryManager:
@@ -265,32 +266,42 @@ class GlossaryEntryManager:
 
 def main():
     """Main function to handle command line arguments and execute operations."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Get default values from environment variables
+    default_project_id = os.getenv("PROJECT_ID")
+    default_location = os.getenv("LOCATION", "us-central1")
+    
     parser = argparse.ArgumentParser(
         description="Google Cloud Translation v3 Glossary Entry Manager",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # List all entries in a glossary
+  # List all entries in a glossary (using .env defaults)
+  python glossary_manager.py list --glossary-id my-glossary --auth-file auth_files/service-account.json
+
+  # List all entries with custom project ID
   python glossary_manager.py list --project-id my-project --glossary-id my-glossary --auth-file auth_files/service-account.json
 
   # Get a specific entry
-  python glossary_manager.py get --project-id my-project --glossary-id my-glossary --entry-id entry-123 --auth-file auth_files/service-account.json
+  python glossary_manager.py get --glossary-id my-glossary --entry-id entry-123 --auth-file auth_files/service-account.json
 
   # Create a new entry
-  python glossary_manager.py create --project-id my-project --glossary-id my-glossary --terms '[{"language_code": "en", "text": "hello"}, {"language_code": "es", "text": "hola"}]' --auth-file auth_files/service-account.json
+  python glossary_manager.py create --glossary-id my-glossary --terms '[{"language_code": "en", "text": "hello"}, {"language_code": "es", "text": "hola"}]' --auth-file auth_files/service-account.json
         """
     )
 
     parser.add_argument("action", choices=["list", "get", "create", "update", "delete"],
                        help="Action to perform")
-    parser.add_argument("--project-id", required=True,
-                       help="Google Cloud project ID")
+    parser.add_argument("--project-id", default=default_project_id,
+                       help=f"Google Cloud project ID (default: {default_project_id or 'from .env file'})")
     parser.add_argument("--glossary-id", required=True,
                        help="Glossary ID")
     parser.add_argument("--auth-file", required=True,
                        help="Path to service account JSON file")
-    parser.add_argument("--location", default="us-central1",
-                       help="Google Cloud location (default: us-central1)")
+    parser.add_argument("--location", default=default_location,
+                       help=f"Google Cloud location (default: {default_location})")
     parser.add_argument("--entry-id",
                        help="Glossary entry ID (required for get, update, delete actions)")
     parser.add_argument("--terms",
@@ -305,6 +316,9 @@ Examples:
     args = parser.parse_args()
 
     # Validate arguments
+    if not args.project_id:
+        parser.error("Project ID is required. Set PROJECT_ID in your .env file or use --project-id parameter")
+    
     if args.action in ["get", "update", "delete"] and not args.entry_id:
         parser.error(f"Action '{args.action}' requires --entry-id")
 
