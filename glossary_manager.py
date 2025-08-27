@@ -1,427 +1,407 @@
+#!/usr/bin/env python3
 """
-Glossary Manager for Google Translation V3 API with Cloud Storage integration.
-Handles downloading and uploading CSV glossary files to/from Google Cloud Storage.
+Google Cloud Translation v3 Glossary Entry Manager
+
+This module provides functionality to work with Google Cloud Translation v3
+glossary entries using the REST API directly, since the glossary entry methods
+are not yet available in the current Google Cloud Translation v3 library.
 """
 
-import os
+import argparse
 import json
-import logging
-from typing import List, Dict, Optional, Tuple
-from pathlib import Path
-
-import pandas as pd
-from google.cloud import storage, translate_v3
+import os
+import sys
+from typing import Dict, List, Optional, Any
+import requests
 from google.oauth2 import service_account
-from google.api_core import exceptions
+from google.auth.transport.requests import Request
 
 
-class GlossaryManager:
-    """
-    Manages glossary CSV files for Google Translation V3 API using Cloud Storage.
-    """
+class GlossaryEntryManager:
+    """Manages Google Cloud Translation v3 glossary entries using REST API."""
 
-    def __init__(self, credentials_path: str, project_id: str, bucket_name: str):
+    def __init__(self, project_id: str, auth_file: str, location: str = "us-central1"):
         """
-        Initialize the GlossaryManager.
+        Initialize the GlossaryEntryManager.
 
         Args:
-            credentials_path: Path to the Google Cloud service account JSON file
             project_id: Google Cloud project ID
-            bucket_name: Name of the Cloud Storage bucket for glossaries
+            auth_file: Path to the service account JSON file
+            location: Google Cloud location (default: us-central1)
         """
-        self.credentials_path = credentials_path
         self.project_id = project_id
-        self.bucket_name = bucket_name
+        self.location = location
+        self.auth_file = auth_file
 
-        # Setup logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        # Set up authentication
+        self.credentials = service_account.Credentials.from_service_account_file(
+            auth_file,
+            scopes=['https://www.googleapis.com/auth/cloud-platform']
+        )
 
-        # Initialize clients
-        self._setup_clients()
+        # Base URL for the Translation API
+        self.base_url = "https://translation.googleapis.com/v3"
 
-        # Supported languages (can be extended)
-        self.supported_languages = [
-            'en', 'es', 'fr', 'bs', 'sw'
-        ]
+        # Construct the parent path
+        self.parent = f"projects/{project_id}/locations/{location}"
 
-    def _setup_clients(self):
-        """Setup Google Cloud clients with authentication."""
-        try:
-            # Load credentials
-            credentials = service_account.Credentials.from_service_account_file(
-                self.credentials_path
-            )
+    def _get_headers(self) -> Dict[str, str]:
+        """Get headers for API requests."""
+        # Refresh the token if needed
+        if not self.credentials.valid:
+            self.credentials.refresh(Request())
 
-            # Initialize clients
-            self.storage_client = storage.Client(
-                credentials=credentials,
-                project=self.project_id
-            )
-            self.translate_client = translate_v3.TranslationServiceClient(
-                credentials=credentials
-            )
+        return {
+            "Authorization": f"Bearer {self.credentials.token}",
+            "Content-Type": "application/json; charset=utf-8",
+            "x-goog-user-project": self.project_id
+        }
 
-            self.logger.info(f"Successfully initialized clients for project: {self.project_id}")
-
-        except Exception as e:
-            self.logger.error(f"Failed to setup clients: {str(e)}")
-            raise
-
-    def upload_glossary_csv(self, local_file_path: str, language_pair: str,
-                           overwrite: bool = False) -> bool:
+    def list_glossary_entries(self, glossary_id: str, page_size: int = 100) -> List[Dict[str, Any]]:
         """
-        Upload a CSV glossary file to Cloud Storage.
+        List all entries in a glossary.
 
         Args:
-            local_file_path: Path to the local CSV file
-            language_pair: Language pair (e.g., 'en-es', 'fr-de', 'iwd-en-es')
-            overwrite: Whether to overwrite existing file
+            glossary_id: The ID of the glossary
+            page_size: Number of entries to return per page (default: 100)
 
         Returns:
-            bool: True if successful, False otherwise
+            List of glossary entries as dictionaries
         """
         try:
-            # Validate file exists
-            if not os.path.exists(local_file_path):
-                self.logger.error(f"File not found: {local_file_path}")
-                return False
+            # Construct the URL
+            url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries"
 
-            # Get filename for validation
-            filename = os.path.basename(local_file_path)
-            
-            # Validate filename matches language pair
-            if not self._validate_glossary_filename(filename, language_pair):
-                self.logger.error(f"Filename '{filename}' does not match language pair '{language_pair}'")
-                self.logger.error(f"Expected: {self._generate_glossary_filename(language_pair).split('/')[-1]}")
-                return False
+            # Add query parameters
+            params = {"pageSize": page_size}
 
-            # Validate CSV format
-            if not self._validate_csv_format(local_file_path):
-                self.logger.error(f"Invalid CSV format: {local_file_path}")
-                return False
+            print(f"Listing glossary entries for glossary: {glossary_id}")
+            print(f"URL: {url}")
 
-            # Create blob name - handle both regular and IWD glossaries
-            if language_pair.startswith('iwd-'):
-                # IWD glossary: iwd-en-es -> iwd_en_es_glossary.csv
-                clean_pair = language_pair[4:]  # Remove 'iwd-' prefix
-                blob_name = f"iwd_{clean_pair.replace('-', '_')}_glossary.csv"
+            # Make the API call
+            response = requests.get(url, headers=self._get_headers(), params=params)
+
+            if response.status_code == 200:
+                data = response.json()
+                entries = data.get("glossaryEntries", [])
+                print(f"Found {len(entries)} glossary entries")
+                return entries
+            elif response.status_code == 404:
+                print(f"Error: Glossary '{glossary_id}' not found")
+                return []
+            elif response.status_code == 403:
+                print(f"Error: Permission denied. Check your service account permissions.")
+                return []
             else:
-                # Regular glossary: en-es -> en_es_glossary.csv
-                blob_name = f"{language_pair.replace('-', '_')}_glossary.csv"
-
-            # Get bucket and blob
-            bucket = self.storage_client.bucket(self.bucket_name)
-            blob = bucket.blob(blob_name)
-
-            # Check if file exists and overwrite flag
-            if blob.exists() and not overwrite:
-                self.logger.warning(f"File already exists: {blob_name}. Use overwrite=True to replace.")
-                return False
-
-            # Upload file
-            blob.upload_from_filename(local_file_path)
-
-            self.logger.info(f"Successfully uploaded {local_file_path} to {blob_name}")
-            return True
+                print(f"Error: HTTP {response.status_code} - {response.text}")
+                return []
 
         except Exception as e:
-            self.logger.error(f"Failed to upload glossary: {str(e)}")
-            return False
-
-    def download_glossary_csv(self, language_pair: str, local_file_path: str = None) -> bool:
-        """
-        Download a CSV glossary file from Cloud Storage.
-
-        Args:
-            language_pair: Language pair (e.g., 'en-es', 'fr-de')
-            local_file_path: Path where to save the local CSV file (optional, will auto-generate if not provided)
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            # Auto-generate filename if not provided
-            if local_file_path is None:
-                local_file_path = self._generate_glossary_filename(language_pair)
-
-            # Create blob name - handle both regular and IWD glossaries
-            if language_pair.startswith('iwd-'):
-                # IWD glossary: iwd-en-es -> iwd_en_es_glossary.csv
-                clean_pair = language_pair[4:]  # Remove 'iwd-' prefix
-                blob_name = f"iwd_{clean_pair.replace('-', '_')}_glossary.csv"
-            else:
-                # Regular glossary: en-es -> en_es_glossary.csv
-                blob_name = f"{language_pair.replace('-', '_')}_glossary.csv"
-
-            # Get bucket and blob
-            bucket = self.storage_client.bucket(self.bucket_name)
-            blob = bucket.blob(blob_name)
-
-            # Check if file exists
-            if not blob.exists():
-                self.logger.error(f"File not found in Cloud Storage: {blob_name}")
-                return False
-
-            # Create directory if it doesn't exist (only if there's a directory path)
-            if os.path.dirname(local_file_path):
-                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-            # Download file
-            blob.download_to_filename(local_file_path)
-
-            self.logger.info(f"Successfully downloaded {blob_name} to {local_file_path}")
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Failed to download glossary: {str(e)}")
-            return False
-
-    def list_available_glossaries(self) -> List[str]:
-        """
-        List all available glossaries in Cloud Storage.
-
-        Returns:
-            List of language pairs that have glossaries
-        """
-        try:
-            bucket = self.storage_client.bucket(self.bucket_name)
-            blobs = bucket.list_blobs()
-
-            glossaries = []
-            for blob in blobs:
-                if blob.name.endswith('glossary.csv'):
-                    # Handle both path structures:
-                    # 1. glossaries/{language_pair}/glossary.csv (new structure)
-                    # 2. {language_pair}_glossary.csv (current structure)
-
-                    if blob.name.startswith('glossaries/'):
-                        # New structure: glossaries/en-es/glossary.csv
-                        parts = blob.name.split('/')
-                        if len(parts) >= 3:
-                            language_pair = parts[1]
-                            glossaries.append(language_pair)
-                    else:
-                        # Current structure: en_es_glossary.csv or iwd_en_es_glossary.csv
-                        filename = blob.name.replace('_glossary.csv', '')
-
-                        # Handle iwd_ prefix
-                        if filename.startswith('iwd_'):
-                            filename = filename[4:]  # Remove 'iwd_' prefix
-                            # Convert underscores to hyphens for language pairs
-                            language_pair = filename.replace('_', '-')
-                            glossaries.append(f"iwd-{language_pair}")
-                        else:
-                            # Convert underscores to hyphens for language pairs
-                            language_pair = filename.replace('_', '-')
-                            glossaries.append(language_pair)
-
-            # Sort the list for better presentation
-            glossaries.sort()
-            return list(set(glossaries))  # Remove duplicates
-
-        except Exception as e:
-            self.logger.error(f"Failed to list glossaries: {str(e)}")
+            print(f"Error listing glossary entries: {e}")
             return []
 
-    def create_glossary_in_translation_api(self, language_pair: str,
-                                         glossary_name: str) -> bool:
+    def get_glossary_entry(self, glossary_id: str, entry_id: str) -> Optional[Dict[str, Any]]:
         """
-        Create a glossary in the Google Translation API using the CSV from Cloud Storage.
+        Get a specific glossary entry by ID.
 
         Args:
-            language_pair: Language pair (e.g., 'en-es', 'fr-de')
-            glossary_name: Name for the glossary in the Translation API
+            glossary_id: The ID of the glossary
+            entry_id: The ID of the glossary entry
 
         Returns:
-            bool: True if successful, False otherwise
+            Glossary entry as dictionary or None if not found
         """
         try:
-            # Get the source and target languages
-            source_lang, target_lang = language_pair.split('-')
+            # Construct the URL
+            url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries/{entry_id}"
 
-            # Create the parent resource name
-            parent = f"projects/{self.project_id}/locations/global"
+            print(f"Getting glossary entry: {entry_id}")
+            print(f"URL: {url}")
 
-            # Create the glossary resource
-            glossary = {
-                "name": f"{parent}/glossaries/{glossary_name}",
-                "language_pair": {
-                    "source_language_code": source_lang,
-                    "target_language_code": target_lang
-                },
-                "input_config": {
-                    "gcs_source": {
-                        "input_uri": f"gs://{self.bucket_name}/{language_pair.replace('-', '_')}_glossary.csv" if not language_pair.startswith('iwd-') else f"gs://{self.bucket_name}/iwd_{language_pair[4:].replace('-', '_')}_glossary.csv"
-                    }
+            # Make the API call
+            response = requests.get(url, headers=self._get_headers())
+
+            if response.status_code == 200:
+                entry = response.json()
+                print(f"Retrieved entry: {entry_id}")
+                return entry
+            elif response.status_code == 404:
+                print(f"Error: Glossary entry '{entry_id}' not found")
+                return None
+            else:
+                print(f"Error: HTTP {response.status_code} - {response.text}")
+                return None
+
+        except Exception as e:
+            print(f"Error getting glossary entry: {e}")
+            return None
+
+    def create_glossary_entry(self, glossary_id: str, terms: List[Dict[str, str]],
+                            description: str = "") -> Optional[str]:
+        """
+        Create a new glossary entry.
+
+        Args:
+            glossary_id: The ID of the glossary
+            terms: List of terms with language_code and text
+            description: Description of the glossary entry
+
+        Returns:
+            The ID of the created entry or None if failed
+        """
+        try:
+            # Construct the URL
+            url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries"
+
+            # Prepare the request body
+            request_body = {
+                "termsSet": {
+                    "terms": terms
                 }
             }
 
-            # Create the glossary
-            operation = self.translate_client.create_glossary(
-                parent=parent,
-                glossary=glossary
-            )
+            if description:
+                request_body["description"] = description
 
-            # Wait for the operation to complete
-            result = operation.result()
+            print(f"Creating glossary entry in glossary: {glossary_id}")
+            print(f"URL: {url}")
+            print(f"Request body: {json.dumps(request_body, indent=2)}")
 
-            self.logger.info(f"Successfully created glossary: {glossary_name}")
-            return True
+            # Make the API call
+            response = requests.post(url, headers=self._get_headers(), json=request_body)
 
-        except Exception as e:
-            self.logger.error(f"Failed to create glossary in Translation API: {str(e)}")
-            return False
-
-    def list_translation_glossaries(self) -> List[Dict]:
-        """
-        List all glossaries in the Google Translation API.
-
-        Returns:
-            List of glossary information dictionaries
-        """
-        try:
-            parent = f"projects/{self.project_id}/locations/global"
-
-            glossaries = []
-            for glossary in self.translate_client.list_glossaries(parent=parent):
-                glossaries.append({
-                    'name': glossary.name,
-                    'language_pair': f"{glossary.language_pair.source_language_code}-{glossary.language_pair.target_language_code}",
-                    'entry_count': glossary.entry_count,
-                    'state': glossary.state.name
-                })
-
-            return glossaries
-
-        except Exception as e:
-            self.logger.error(f"Failed to list Translation API glossaries: {str(e)}")
-            return []
-
-    def _generate_glossary_filename(self, language_pair: str) -> str:
-        """
-        Generate a filename for a glossary based on the language pair.
-
-        Args:
-            language_pair: Language pair (e.g., 'en-es', 'fr-de')
-
-        Returns:
-            str: Generated filename path
-        """
-        # Create glossaries directory if it doesn't exist
-        glossaries_dir = Path('glossaries')
-        glossaries_dir.mkdir(exist_ok=True)
-
-        # Generate filename based on language pair
-        if language_pair.startswith('iwd-'):
-            # IWD glossary: iwd-en-es -> glossaries/iwd_en_es_glossary.csv
-            clean_pair = language_pair[4:]  # Remove 'iwd-' prefix
-            filename = f"iwd_{clean_pair.replace('-', '_')}_glossary.csv"
-        else:
-            # Regular glossary: en-es -> glossaries/en_es_glossary.csv
-            filename = f"{language_pair.replace('-', '_')}_glossary.csv"
-
-        return str(glossaries_dir / filename)
-
-    def _is_iwd_glossary(self, filename: str) -> bool:
-        """
-        Check if a filename corresponds to an IWD glossary.
-        
-        Args:
-            filename: The filename to check
-            
-        Returns:
-            bool: True if it's an IWD glossary, False otherwise
-        """
-        return filename.startswith('iwd_')
-
-    def _validate_glossary_filename(self, filename: str, language_pair: str) -> bool:
-        """
-        Validate that a filename matches the expected naming convention for a language pair.
-        
-        Args:
-            filename: The filename to validate
-            language_pair: The language pair (e.g., 'en-es' or 'iwd-en-es')
-            
-        Returns:
-            bool: True if valid, False otherwise
-        """
-        try:
-            if language_pair.startswith('iwd-'):
-                # IWD glossary: iwd-en-es -> iwd_en_es_glossary.csv
-                clean_pair = language_pair[4:]  # Remove 'iwd-' prefix
-                expected_filename = f"iwd_{clean_pair.replace('-', '_')}_glossary.csv"
+            if response.status_code == 200:
+                entry = response.json()
+                entry_id = entry["name"].split("/")[-1]
+                print(f"Created glossary entry: {entry_id}")
+                return entry_id
             else:
-                # Regular glossary: en-es -> en_es_glossary.csv
-                expected_filename = f"{language_pair.replace('-', '_')}_glossary.csv"
-            
-            return filename == expected_filename
-        except Exception:
-            return False
-
-    def _validate_csv_format(self, file_path: str) -> bool:
-        """
-        Validate that the CSV file has the correct format for glossaries.
-        Google Cloud Translate glossaries don't use header rows.
-
-        Args:
-            file_path: Path to the CSV file
-
-        Returns:
-            bool: True if valid, False otherwise
-        """
-        try:
-            # Read CSV without headers since Google Translate doesn't use them
-            df = pd.read_csv(file_path, header=None)
-
-            # Check if it has at least 2 columns (source and target)
-            if len(df.columns) < 2:
-                self.logger.error("CSV must have at least 2 columns (source and target)")
-                return False
-
-            # Check if it has data
-            if len(df) == 0:
-                self.logger.error("CSV file is empty")
-                return False
-
-            self.logger.info(f"CSV validation passed: {len(df)} entries, {len(df.columns)} columns")
-            return True
+                print(f"Error: HTTP {response.status_code} - {response.text}")
+                return None
 
         except Exception as e:
-            self.logger.error(f"CSV validation failed: {str(e)}")
-            return False
+            print(f"Error creating glossary entry: {e}")
+            return None
 
-    def create_sample_glossary_csv(self, language_pair: str, output_path: str) -> bool:
+    def update_glossary_entry(self, glossary_id: str, entry_id: str,
+                            terms: List[Dict[str, str]], description: str = "") -> bool:
         """
-        Create a sample CSV file for a language pair.
+        Update an existing glossary entry.
 
         Args:
-            language_pair: Language pair (e.g., 'en-es', 'fr-de')
-            output_path: Path where to save the sample CSV
+            glossary_id: The ID of the glossary
+            entry_id: The ID of the glossary entry
+            terms: List of terms with language_code and text
+            description: Description of the glossary entry
 
         Returns:
-            bool: True if successful, False otherwise
+            True if successful, False otherwise
         """
         try:
-            source_lang, target_lang = language_pair.split('-')
+            # Construct the URL
+            url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries/{entry_id}"
 
-            # Sample data (you can customize this)
-            sample_data = {
-                source_lang: ['hello', 'world', 'computer', 'software', 'database'],
-                target_lang: ['hola', 'mundo', 'computadora', 'software', 'base de datos']
+            # Prepare the request body
+            request_body = {
+                "termsSet": {
+                    "terms": terms
+                }
             }
 
-            df = pd.DataFrame(sample_data)
+            if description:
+                request_body["description"] = description
 
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            print(f"Updating glossary entry: {entry_id}")
+            print(f"URL: {url}")
+            print(f"Request body: {json.dumps(request_body, indent=2)}")
 
-            # Save to CSV
-            df.to_csv(output_path, index=False)
+            # Make the API call
+            response = requests.patch(url, headers=self._get_headers(), json=request_body)
 
-            self.logger.info(f"Created sample glossary CSV: {output_path}")
-            return True
+            if response.status_code == 200:
+                entry = response.json()
+                print(f"Updated glossary entry: {entry_id}")
+                return True
+            else:
+                print(f"Error: HTTP {response.status_code} - {response.text}")
+                return False
 
         except Exception as e:
-            self.logger.error(f"Failed to create sample CSV: {str(e)}")
+            print(f"Error updating glossary entry: {e}")
             return False
+
+    def delete_glossary_entry(self, glossary_id: str, entry_id: str) -> bool:
+        """
+        Delete a glossary entry.
+
+        Args:
+            glossary_id: The ID of the glossary
+            entry_id: The ID of the glossary entry
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Construct the URL
+            url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries/{entry_id}"
+
+            print(f"Deleting glossary entry: {entry_id}")
+            print(f"URL: {url}")
+
+            # Make the API call
+            response = requests.delete(url, headers=self._get_headers())
+
+            if response.status_code == 200:
+                print(f"Deleted glossary entry: {entry_id}")
+                return True
+            else:
+                print(f"Error: HTTP {response.status_code} - {response.text}")
+                return False
+
+        except Exception as e:
+            print(f"Error deleting glossary entry: {e}")
+            return False
+
+
+def main():
+    """Main function to handle command line arguments and execute operations."""
+    parser = argparse.ArgumentParser(
+        description="Google Cloud Translation v3 Glossary Entry Manager",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # List all entries in a glossary
+  python glossary_manager.py list --project-id my-project --glossary-id my-glossary --auth-file auth_files/service-account.json
+
+  # Get a specific entry
+  python glossary_manager.py get --project-id my-project --glossary-id my-glossary --entry-id entry-123 --auth-file auth_files/service-account.json
+
+  # Create a new entry
+  python glossary_manager.py create --project-id my-project --glossary-id my-glossary --terms '[{"language_code": "en", "text": "hello"}, {"language_code": "es", "text": "hola"}]' --auth-file auth_files/service-account.json
+        """
+    )
+
+    parser.add_argument("action", choices=["list", "get", "create", "update", "delete"],
+                       help="Action to perform")
+    parser.add_argument("--project-id", required=True,
+                       help="Google Cloud project ID")
+    parser.add_argument("--glossary-id", required=True,
+                       help="Glossary ID")
+    parser.add_argument("--auth-file", required=True,
+                       help="Path to service account JSON file")
+    parser.add_argument("--location", default="us-central1",
+                       help="Google Cloud location (default: us-central1)")
+    parser.add_argument("--entry-id",
+                       help="Glossary entry ID (required for get, update, delete actions)")
+    parser.add_argument("--terms",
+                       help="JSON string of terms for create/update actions")
+    parser.add_argument("--description", default="",
+                       help="Description for the glossary entry")
+    parser.add_argument("--page-size", type=int, default=100,
+                       help="Number of entries to return per page (default: 100)")
+    parser.add_argument("--output", choices=["json", "table"],
+                       default="table", help="Output format (default: table)")
+
+    args = parser.parse_args()
+
+    # Validate arguments
+    if args.action in ["get", "update", "delete"] and not args.entry_id:
+        parser.error(f"Action '{args.action}' requires --entry-id")
+
+    if args.action in ["create", "update"] and not args.terms:
+        parser.error(f"Action '{args.action}' requires --terms")
+
+    # Check if auth file exists
+    if not os.path.exists(args.auth_file):
+        print(f"Error: Auth file '{args.auth_file}' not found")
+        sys.exit(1)
+
+    # Initialize the manager
+    try:
+        manager = GlossaryEntryManager(
+            project_id=args.project_id,
+            auth_file=args.auth_file,
+            location=args.location
+        )
+    except Exception as e:
+        print(f"Error initializing GlossaryEntryManager: {e}")
+        sys.exit(1)
+
+    # Execute the requested action
+    if args.action == "list":
+        entries = manager.list_glossary_entries(args.glossary_id, args.page_size)
+
+        if args.output == "json":
+            print(json.dumps(entries, indent=2))
+        else:
+            if entries:
+                print(f"\nGlossary Entries for '{args.glossary_id}':")
+                print("-" * 80)
+                for i, entry in enumerate(entries, 1):
+                    entry_id = entry.get("name", "").split("/")[-1] if entry.get("name") else f"entry-{i}"
+                    print(f"\n{i}. Entry ID: {entry_id}")
+                    if entry.get("description"):
+                        print(f"   Description: {entry['description']}")
+                    if entry.get("termsSet", {}).get("terms"):
+                        print("   Terms:")
+                        for term in entry["termsSet"]["terms"]:
+                            print(f"     {term.get('languageCode', 'unknown')}: {term.get('text', 'unknown')}")
+            else:
+                print("No entries found.")
+
+    elif args.action == "get":
+        entry = manager.get_glossary_entry(args.glossary_id, args.entry_id)
+
+        if args.output == "json":
+            print(json.dumps(entry, indent=2) if entry else "null")
+        else:
+            if entry:
+                print(f"\nGlossary Entry: {args.entry_id}")
+                print("-" * 40)
+                if entry.get("description"):
+                    print(f"Description: {entry['description']}")
+                if entry.get("termsSet", {}).get("terms"):
+                    print("Terms:")
+                    for term in entry["termsSet"]["terms"]:
+                        print(f"  {term.get('languageCode', 'unknown')}: {term.get('text', 'unknown')}")
+            else:
+                print("Entry not found.")
+
+    elif args.action == "create":
+        try:
+            terms = json.loads(args.terms)
+            entry_id = manager.create_glossary_entry(
+                args.glossary_id, terms, args.description
+            )
+            if entry_id:
+                print(f"Successfully created entry with ID: {entry_id}")
+            else:
+                print("Failed to create entry.")
+        except json.JSONDecodeError:
+            print("Error: Invalid JSON format for --terms")
+            sys.exit(1)
+
+    elif args.action == "update":
+        try:
+            terms = json.loads(args.terms)
+            success = manager.update_glossary_entry(
+                args.glossary_id, args.entry_id, terms, args.description
+            )
+            if success:
+                print("Successfully updated entry.")
+            else:
+                print("Failed to update entry.")
+        except json.JSONDecodeError:
+            print("Error: Invalid JSON format for --terms")
+            sys.exit(1)
+
+    elif args.action == "delete":
+        success = manager.delete_glossary_entry(args.glossary_id, args.entry_id)
+        if success:
+            print("Successfully deleted entry.")
+        else:
+            print("Failed to delete entry.")
+
+
+if __name__ == "__main__":
+    main()
