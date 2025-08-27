@@ -117,7 +117,7 @@ python glossary_manager.py update \
   --glossary-id YOUR_GLOSSARY_ID \
   --entry-id ENTRY_ID \
   --terms '[{"language_code": "en", "text": "updated hello"}, {"language_code": "es", "text": "hola actualizado"}]' \
-  --description "Updated greeting terms" \
+  --description "Updated terms" \
   --auth-file auth_files/your-service-account.json
 ```
 

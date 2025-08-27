@@ -268,11 +268,11 @@ def main():
     """Main function to handle command line arguments and execute operations."""
     # Load environment variables from .env file
     load_dotenv()
-    
+
     # Get default values from environment variables
     default_project_id = os.getenv("PROJECT_ID")
     default_location = os.getenv("LOCATION", "us-central1")
-    
+
     parser = argparse.ArgumentParser(
         description="Google Cloud Translation v3 Glossary Entry Manager",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -318,7 +318,7 @@ Examples:
     # Validate arguments
     if not args.project_id:
         parser.error("Project ID is required. Set PROJECT_ID in your .env file or use --project-id parameter")
-    
+
     if args.action in ["get", "update", "delete"] and not args.entry_id:
         parser.error(f"Action '{args.action}' requires --entry-id")
 
@@ -356,10 +356,22 @@ Examples:
                     print(f"\n{i}. Entry ID: {entry_id}")
                     if entry.get("description"):
                         print(f"   Description: {entry['description']}")
+
+                    # Handle termsSet format (multiple terms)
                     if entry.get("termsSet", {}).get("terms"):
                         print("   Terms:")
                         for term in entry["termsSet"]["terms"]:
                             print(f"     {term.get('languageCode', 'unknown')}: {term.get('text', 'unknown')}")
+
+                    # Handle termsPair format (source/target pair)
+                    elif entry.get("termsPair"):
+                        print("   Terms:")
+                        source = entry["termsPair"].get("sourceTerm", {})
+                        target = entry["termsPair"].get("targetTerm", {})
+                        if source:
+                            print(f"     {source.get('languageCode', 'unknown')}: {source.get('text', 'unknown')}")
+                        if target:
+                            print(f"     {target.get('languageCode', 'unknown')}: {target.get('text', 'unknown')}")
             else:
                 print("No entries found.")
 
@@ -374,10 +386,22 @@ Examples:
                 print("-" * 40)
                 if entry.get("description"):
                     print(f"Description: {entry['description']}")
+
+                # Handle termsSet format (multiple terms)
                 if entry.get("termsSet", {}).get("terms"):
                     print("Terms:")
                     for term in entry["termsSet"]["terms"]:
                         print(f"  {term.get('languageCode', 'unknown')}: {term.get('text', 'unknown')}")
+
+                # Handle termsPair format (source/target pair)
+                elif entry.get("termsPair"):
+                    print("Terms:")
+                    source = entry["termsPair"].get("sourceTerm", {})
+                    target = entry["termsPair"].get("targetTerm", {})
+                    if source:
+                        print(f"  {source.get('languageCode', 'unknown')}: {source.get('text', 'unknown')}")
+                    if target:
+                        print(f"  {target.get('languageCode', 'unknown')}: {target.get('text', 'unknown')}")
             else:
                 print("Entry not found.")
 
