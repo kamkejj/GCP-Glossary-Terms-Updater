@@ -199,15 +199,54 @@ class GlossaryEntryManager:
             True if successful, False otherwise
         """
         try:
+            # First, get the existing entry to determine its format
+            existing_entry = self.get_glossary_entry(glossary_id, entry_id)
+            if not existing_entry:
+                print(f"Error: Cannot find existing entry {entry_id} to determine format")
+                return False
+
             # Construct the URL
             url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries/{entry_id}"
 
-            # Prepare the request body
-            request_body = {
-                "termsSet": {
+            # Prepare the request body based on the existing entry format
+            request_body = {}
+
+            # Check if the existing entry uses termsPair format
+            if "termsPair" in existing_entry:
+                # Convert terms to termsPair format
+                if len(terms) >= 2:
+                    # Find source and target terms
+                    source_term = None
+                    target_term = None
+
+                    for term in terms:
+                        if term.get("language_code") == "en":
+                            source_term = term
+                        elif term.get("language_code") == "fr":
+                            target_term = term
+
+                    if source_term and target_term:
+                        request_body["termsPair"] = {
+                            "sourceTerm": {
+                                "languageCode": source_term["language_code"],
+                                "text": source_term["text"]
+                            },
+                            "targetTerm": {
+                                "languageCode": target_term["language_code"],
+                                "text": target_term["text"]
+                            }
+                        }
+                    else:
+                        print("Error: Need both English (source) and French (target) terms for termsPair format")
+                        return False
+                else:
+                    print("Error: Need at least 2 terms for termsPair format")
+                    return False
+            else:
+                # Use termsSet format
+                request_body["termsSet"] = {
                     "terms": terms
                 }
-            }
 
             if description:
                 request_body["description"] = description
