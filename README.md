@@ -81,6 +81,20 @@ You can grant these permissions by assigning the `Cloud Translation API Editor` 
 
 ## Usage
 
+### Iowa DX Glossaries
+
+en_bs_glossary - Bosnian glossary
+en_es_glossary - Spanish glossary
+en_fr_glossary - French glossary
+en_sw_glossary - Swahili glossary
+
+#### IWD Specfic Glossaries
+
+iwd_en_bs_glossary - IWD Bosnian glossary
+iwd_en_es_glossary - IWD Spanish glossary
+iwd_en_fr_glossary - IWD French glossary
+iwd_en_sw_glossary - IWD Swahili glossary
+
 ### Command Line Interface
 
 The application provides a command-line interface for all operations:
@@ -158,74 +172,6 @@ python glossary_manager.py delete \
 - `--page-size`: Number of entries to return per page (default: `100`)
 - `--output`: Output format (`json` or `table`, default: `table`)
 
-### Programmatic Usage
-
-You can also use the `GlossaryEntryManager` class directly in your Python code:
-
-```python
-from glossary_manager import GlossaryEntryManager
-
-# Initialize the manager
-manager = GlossaryEntryManager(
-    project_id="your-project-id",
-    auth_file="auth_files/your-service-account.json",
-    location="us-central1"
-)
-
-# List all entries
-entries = manager.list_glossary_entries("your-glossary-id")
-
-# Create a new entry
-terms = [
-    {"language_code": "en", "text": "hello"},
-    {"language_code": "es", "text": "hola"}
-]
-entry_id = manager.create_glossary_entry("your-glossary-id", terms, "Greeting terms")
-```
-
-## Example Usage
-
-See `example_usage.py` for a comprehensive example of how to use the GlossaryEntryManager class.
-
-To run the example:
-
-1. Update the configuration variables in `example_usage.py`:
-   - `PROJECT_ID`: Your Google Cloud project ID
-   - `GLOSSARY_ID`: Your glossary ID
-   - `LOCATION`: Your glossary location
-   - `AUTH_FILE`: Path to your service account JSON file
-
-2. Run the example:
-
-```bash
-python example_usage.py
-```
-
-## Glossary Entry Format
-
-Glossary entries consist of:
-
-- **Terms**: A list of terms in different languages
-- **Description**: Optional description of the entry
-
-Each term has:
-
-- `language_code`: ISO language code (e.g., "en", "es", "fr")
-- `text`: The actual term text
-
-Example:
-
-```json
-{
-  "terms": [
-    {"language_code": "en", "text": "hello"},
-    {"language_code": "es", "text": "hola"},
-    {"language_code": "fr", "text": "bonjour"}
-  ],
-  "description": "Common greeting terms"
-}
-```
-
 ## Error Handling
 
 The application provides comprehensive error handling for common issues:
@@ -260,7 +206,3 @@ The application uses the Google Cloud Translation v3 API. For detailed API docum
 ## License
 
 This project is provided as-is for educational and development purposes. Please ensure compliance with Google Cloud Platform terms of service when using this application.
-
-## Contributing
-
-Feel free to submit issues, feature requests, or pull requests to improve this application.
