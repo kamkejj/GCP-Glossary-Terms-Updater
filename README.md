@@ -32,9 +32,28 @@ pip install -r requirements.txt
    - Place your service account JSON file in the `auth_files/` directory
    - Ensure the service account has the necessary permissions for Cloud Translation API
 
+   Example contents of this file:
+
+```bash
+  {
+    "type": "service_account",
+    "project_id": "",
+    "private_key_id": "",
+    "private_key": "",
+    "client_email": "",
+    "client_id": "",
+    "auth_uri": "",
+    "token_uri": "",
+    "auth_provider_x509_cert_url": "",
+    "client_x509_cert_url": "",
+    "universe_domain": ""
+  }
+```
+
 4. Configure environment variables (optional):
    - Copy `.env.example` to `.env`
    - Update the values in `.env` with your actual project configuration:
+   - Get the Project id in the service auth file
 
 ```bash
 cp .env.example .env
