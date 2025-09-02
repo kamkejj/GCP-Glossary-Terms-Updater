@@ -81,19 +81,11 @@ You can grant these permissions by assigning the `Cloud Translation API Editor` 
 
 ## Usage
 
-### Iowa DX Glossaries
+### Glossary ID Example
 
-en_bs_glossary - Bosnian glossary
-en_es_glossary - Spanish glossary
-en_fr_glossary - French glossary
-en_sw_glossary - Swahili glossary
-
-#### IWD Specfic Glossaries
-
-iwd_en_bs_glossary - IWD Bosnian glossary
-iwd_en_es_glossary - IWD Spanish glossary
-iwd_en_fr_glossary - IWD French glossary
-iwd_en_sw_glossary - IWD Swahili glossary
+```bash
+en_es_glossary
+```
 
 ### Command Line Interface
 
