@@ -154,12 +154,30 @@ class GlossaryEntryManager:
             # Construct the URL
             url = f"{self.base_url}/{self.parent}/glossaries/{glossary_id}/glossaryEntries"
 
-            # Prepare the request body
-            request_body = {
-                "termsSet": {
+            # Prepare the request body - try termsPair first for unidirectional glossaries
+            request_body = {}
+            
+            # For unidirectional glossaries, use termsPair format
+            if len(terms) >= 2:
+                # Use first two terms as source and target
+                source_term = terms[0]
+                target_term = terms[1]
+                
+                request_body["termsPair"] = {
+                    "sourceTerm": {
+                        "languageCode": source_term["language_code"],
+                        "text": source_term["text"]
+                    },
+                    "targetTerm": {
+                        "languageCode": target_term["language_code"],
+                        "text": target_term["text"]
+                    }
+                }
+            else:
+                # Fallback to termsSet for equivalency glossaries
+                request_body["termsSet"] = {
                     "terms": terms
                 }
-            }
 
             if description:
                 request_body["description"] = description
